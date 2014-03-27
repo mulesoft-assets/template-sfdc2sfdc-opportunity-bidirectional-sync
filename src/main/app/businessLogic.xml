@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:objectstore="http://www.mulesoft.org/schema/mule/objectstore"
+	xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/objectstore http://www.mulesoft.org/schema/mule/objectstore/current/mule-objectstore.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd" version="EE-3.5.0">
+    
+    <batch:job name="syncBatch" >
+        <batch:threading-profile poolExhaustedAction="WAIT"/>
+        <batch:process-records>
+            
+            <batch:step name="getOpportunityInBStep" filter-expression="#['B'.equals(flowVars['sourceSystem'])]">
+                <enricher source="#[payload]" target="#[recordVars['opportunityInTargetInstance']]" doc:name="store opportunity">
+	            	<sfdc:query-single config-ref="SalesforceB" query="SELECT Id, Name, LastModifiedDate FROM Opportunity WHERE (Name = '#[payload['Name']]')" doc:name="query opportunity from B"/>
+                </enricher>
+            </batch:step>
+            
+            <batch:step name="upsertOpportunityInBStep" filter-expression="#[('B'.equals(flowVars['sourceSystem'])) || (recordVars['opportunityInTargetInstance'] is NullPayload ? false : (recordVars['opportunityInTargetInstance'].get('LastModifiedDate') &gt;= payload.get('LastModifiedDate')) || ('${sfdc.a.integration.user.id}' == payload.get('LastModifiedById')))]">
+				<expression-component doc:name="prepare opportunity for upsert"><![CDATA[payload.remove('LastModifiedById');
+payload.remove('LastModifiedDate');
+if(!(recordVars['opportunityInTargetInstance'] is NullPayload)) {
+	payload.put('Id',recordVars['opportunityInTargetInstance'].get('Id'));
+}]]></expression-component>
+                <batch:commit size="200" doc:name="Batch Commit">
+			        <sfdc:upsert config-ref="SalesforceB" externalIdFieldName="Id" type="Opportunity" doc:name="upsert opportunity in B">
+			            <sfdc:objects ref="#[payload]"/>
+			        </sfdc:upsert>
+			        <logger message="Upsert Salesforce response: #[payload]" level="INFO" doc:name="log response"/>
+                </batch:commit>
+            </batch:step>
+            
+            <batch:step name="getOpportunityInAStep" filter-expression="#['A'.equals(flowVars['sourceSystem'])]">
+                <enricher source="#[payload]" target="#[recordVars['opportunityInTargetInstance']]" doc:name="store opportunity">
+		            <sfdc:query-single config-ref="SalesforceA" query="SELECT Id, Name, LastModifiedDate FROM Opportunity WHERE (Name = '#[payload['Name']]')" doc:name="query opportunity from A"/>
+                </enricher>
+            </batch:step>
+            
+            <batch:step name="upsertOpportunityInAStep" filter-expression="#[('A'.equals(flowVars['sourceSystem'])) || (recordVars['opportunityInTargetInstance'] is NullPayload ? false : (recordVars['opportunityInTargetInstance'].get('LastModifiedDate') &gt;= payload.get('LastModifiedDate')) || ('${sfdc.b.integration.user.id}' == payload.get('LastModifiedById')))]">
+				<expression-component doc:name="prepare opportunity for upsert"><![CDATA[payload.remove('LastModifiedById');
+payload.remove('LastModifiedDate');
+if(!(recordVars['opportunityInTargetInstance'] is NullPayload)) {
+	payload.put('Id',recordVars['opportunityInTargetInstance'].get('Id'));
+}]]></expression-component>
+                <batch:commit size="200" doc:name="Batch Commit">
+			        <sfdc:upsert config-ref="SalesforceA" externalIdFieldName="Id" type="Opportunity" doc:name="upsert opportunity in A">
+			            <sfdc:objects ref="#[payload]"/>
+			        </sfdc:upsert>
+			        <logger message="Upsert Salesforce response: #[payload]" level="INFO" doc:name="log response"/>
+                </batch:commit>
+            </batch:step>
+            
+        </batch:process-records>
+    </batch:job>
+    
+</mule>

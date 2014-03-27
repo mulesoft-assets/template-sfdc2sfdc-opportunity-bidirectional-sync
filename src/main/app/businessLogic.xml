@@ -25,6 +25,10 @@ http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/ba
             <batch:step name="upsertOpportunityInBStep" filter-expression="#[('B'.equals(flowVars['sourceSystem'])) || (recordVars['opportunityInTargetInstance'] is NullPayload ? false : (recordVars['opportunityInTargetInstance'].get('LastModifiedDate') &gt;= payload.get('LastModifiedDate')) || ('${sfdc.a.integration.user.id}' == payload.get('LastModifiedById')))]">
 				<expression-component doc:name="prepare opportunity for upsert"><![CDATA[payload.remove('LastModifiedById');
 payload.remove('LastModifiedDate');
+
+java.util.Date dateCloseDate = new java.text.SimpleDateFormat("yyyy-MM-dd").parse(payload.get('CloseDate'));
+payload.put('CloseDate', dateCloseDate);
+
 if(!(recordVars['opportunityInTargetInstance'] is NullPayload)) {
 	payload.put('Id',recordVars['opportunityInTargetInstance'].get('Id'));
 }]]></expression-component>
@@ -45,6 +49,10 @@ if(!(recordVars['opportunityInTargetInstance'] is NullPayload)) {
             <batch:step name="upsertOpportunityInAStep" filter-expression="#[('A'.equals(flowVars['sourceSystem'])) || (recordVars['opportunityInTargetInstance'] is NullPayload ? false : (recordVars['opportunityInTargetInstance'].get('LastModifiedDate') &gt;= payload.get('LastModifiedDate')) || ('${sfdc.b.integration.user.id}' == payload.get('LastModifiedById')))]">
 				<expression-component doc:name="prepare opportunity for upsert"><![CDATA[payload.remove('LastModifiedById');
 payload.remove('LastModifiedDate');
+
+java.util.Date dateCloseDate = new java.text.SimpleDateFormat("yyyy-MM-dd").parse(payload.get('CloseDate'));
+payload.put('CloseDate', dateCloseDate);
+
 if(!(recordVars['opportunityInTargetInstance'] is NullPayload)) {
 	payload.put('Id',recordVars['opportunityInTargetInstance'].get('Id'));
 }]]></expression-component>

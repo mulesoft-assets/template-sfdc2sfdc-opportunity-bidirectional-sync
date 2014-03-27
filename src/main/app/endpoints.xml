@@ -15,21 +15,21 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 
 	<!-- This is the endponits file. In this file you should declare all your inbound and outbound endpoints, in order to control the access to your integration -->
 
-    <flow name="triggerSyncFromAFlow" doc:name="triggerSyncFromAFlow" processingStrategy="synchronous">
+    <flow name="triggerSyncFromAFlow" doc:name="triggerSyncFromAFlow" processingStrategy="synchronous" initialState="started">
 		<poll doc:name="Poll">
 			<fixed-frequency-scheduler frequency="${polling.frequency}" startDelay="10000" />
 			<watermark variable="lastQueryDateA" default-expression="${watermark.default.expression}" selector="MAX" selector-expression="#[payload.LastModifiedDate]" />
-			<sfdc:query config-ref="SalesforceA" doc:name="fetch opportunities from A" query="dsql:SELECT Amount,LastModifiedById,LastModifiedDate,Name,Probability,StageName FROM Opportunity WHERE (LastModifiedDate &gt; #[flowVars['lastQueryDateA']] AND Amount &gt; '5000') ORDER BY LastModifiedDate ASC LIMIT 200"></sfdc:query>
+			<sfdc:query config-ref="SalesforceA" doc:name="fetch opportunities from A" query="dsql:SELECT Amount,CloseDate,LastModifiedById,LastModifiedDate,Name,Probability,StageName FROM Opportunity WHERE (Amount &gt; 5000 AND LastModifiedDate &gt; #[flowVars['lastQueryDateA']]) ORDER BY LastModifiedDate ASC LIMIT 200"></sfdc:query>
 		</poll>
         <set-variable variableName="sourceSystem" value="A" doc:name="set A as source system" />
         <batch:execute name="syncBatch" doc:name="trigger batch execution"/>
     </flow>
     
-	<flow name="triggerSyncFromBFlow" doc:name="triggerSyncFromBFlow" processingStrategy="synchronous">
+	<flow name="triggerSyncFromBFlow" doc:name="triggerSyncFromBFlow" processingStrategy="synchronous" initialState="started">
    		<poll doc:name="Poll">
 			<fixed-frequency-scheduler frequency="${polling.frequency}" startDelay="10000" />
 			<watermark variable="lastQueryDateB" default-expression="${watermark.default.expression}" selector="MAX" selector-expression="#[payload.LastModifiedDate]" />
-			<sfdc:query config-ref="SalesforceB" doc:name="fetch opportunities from B" query="dsql:SELECT Amount,LastModifiedById,LastModifiedDate,Name,Probability,StageName FROM Opportunity WHERE (Amount &gt; '5000' AND LastModifiedDate &gt; #[flowVars['lastQueryDateB']]) ORDER BY LastModifiedDate ASC LIMIT 200"></sfdc:query>
+			<sfdc:query config-ref="SalesforceB" doc:name="fetch opportunities from B" query="dsql:SELECT Amount,CloseDate,LastModifiedById,LastModifiedDate,Name,Probability,StageName FROM Opportunity WHERE (Amount &gt; 5000 AND LastModifiedDate &gt; #[flowVars['lastQueryDateB']]) ORDER BY LastModifiedDate ASC LIMIT 200"></sfdc:query>
 		</poll>
         <set-variable variableName="sourceSystem" value="B" doc:name="set B as source system" />
         <batch:execute name="syncBatch" doc:name="trigger batch execution"/>

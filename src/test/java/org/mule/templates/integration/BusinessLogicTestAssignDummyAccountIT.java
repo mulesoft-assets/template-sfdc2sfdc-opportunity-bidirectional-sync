@@ -36,11 +36,12 @@ import com.sforce.soap.partner.SaveResult;
  * 
  */
 @SuppressWarnings("unchecked")
-public class BusinessLogicTestDoNotCreateAccountIT extends AbstractTemplatesTestCase {
+public class BusinessLogicTestAssignDummyAccountIT extends AbstractTemplatesTestCase {
 
 	private static final String A_INBOUND_FLOW_NAME = "triggerSyncFromAFlow";
 	private static final String B_INBOUND_FLOW_NAME = "triggerSyncFromBFlow";
 	private static final String ANYPOINT_TEMPLATE_NAME = "sfdc2sfdc-bidirectional-opportunity-sync";
+	private static final String ACCOUNT_ID_IN_B = "001n0000003hHsEAAU";
 	private static final int TIMEOUT_MILLIS = 60;
 
 	private static List<String> opportunitiesCreatedInA = new ArrayList<String>();
@@ -69,7 +70,8 @@ public class BusinessLogicTestDoNotCreateAccountIT extends AbstractTemplatesTest
 		System.setProperty("watermark.default.expression",
 				now.toString(dateFormat));
 
-		System.setProperty("account.sync.policy", "");
+		System.setProperty("account.sync.policy", "assignDummyAccount");
+		System.setProperty("account.id.in.b", ACCOUNT_ID_IN_B);
 	}
 	
 	@Before

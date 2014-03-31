@@ -25,12 +25,12 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 	</sub-flow>
     
     <sub-flow name="queryOpportunityFromAFlow" doc:name="queryOpportunityFromAFlow">
-	    <sfdc:query-single config-ref="SalesforceA" query="SELECT Name, Amount, StageName, Probability, CloseDate, AccountId FROM Opportunity WHERE Name = '#[payload['Name']]'" doc:name="Retrieve Opportunity from instance A"/>
+	    <sfdc:query-single config-ref="SalesforceA" query="SELECT Name, Amount, StageName, Probability, CloseDate, Account.Name FROM Opportunity WHERE Name = '#[payload['Name']]'" doc:name="Retrieve Opportunity from instance A"/>
 	    <logger level="INFO" message="Query Opportunities result: #[payload]" doc:name="Logger"/>
 	</sub-flow>
     
     <sub-flow name="queryOpportunityFromBFlow" doc:name="queryOpportunityFromBFlow">
-	    <sfdc:query-single config-ref="SalesforceB" query="SELECT Name, Amount, StageName, Probability, CloseDate, AccountId FROM Opportunity WHERE Name = '#[payload['Name']]'" doc:name="Retrieve Opportunity from instance B"/>
+	    <sfdc:query-single config-ref="SalesforceB" query="SELECT Name, Amount, StageName, Probability, CloseDate, Account.Name FROM Opportunity WHERE Name = '#[payload['Name']]'" doc:name="Retrieve Opportunity from instance B"/>
 	    <logger level="INFO" message="Query Opportunities result: #[payload]" doc:name="Logger"/>
 	</sub-flow>
     

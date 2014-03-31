@@ -23,7 +23,6 @@ http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/ba
             </batch:step>
             
             <batch:step name="findOrCreateAccountInBSetp" filter-expression="#['B'.equals(flowVars['sourceSystem']) || (!('syncAccount'=='${account.sync.policy}'))]">
-                <logger message="Hello Step 2 A! Contact name: #[payload['FirstName']] #[payload['LastName']]" level="INFO" doc:name="debug Logger"/>
                 <enricher source="#[payload]" target="#[recordVars['accountInTargetInstance']]" doc:name="store account in target instance">
                     <sfdc:query-single config-ref="SalesforceB" query="SELECT Id, Name FROM Account WHERE Name = '#[payload['Account']['Name']]'" doc:name="query account in B instance"/>
                 </enricher>
@@ -51,7 +50,6 @@ payload['Account'].put('NumberOfEmployees', payload['Account']['NumberOfEmployee
             </batch:step>
             
             <batch:step name="setDummyAccountIdForBStep" filter-expression="#['B'.equals(flowVars['sourceSystem']) || (! ('assignDummyAccount'=='${account.sync.policy}'))]">
-                <logger message="Hello Step 3 A! Contact name: #[payload['FirstName']] #[payload['LastName']]" level="INFO" doc:name="debug Logger"/>
                 <expression-component doc:name="set contact's parent account id"><![CDATA[payload.put('AccountId', '${account.id.in.b}');]]></expression-component>
             </batch:step>
             
@@ -81,7 +79,6 @@ if(!(recordVars['opportunityInTargetInstance'] is NullPayload)) {
             </batch:step>
             
             <batch:step name="findOrCreateAccountInASetp" filter-expression="#['A'.equals(flowVars['sourceSystem']) || (!('syncAccount'=='${account.sync.policy}'))]">
-                <logger message="Hello Step 2 B! Contact name: #[payload['FirstName']] #[payload['LastName']]" level="INFO" doc:name="debug Logger"/>
                 <enricher source="#[payload]" target="#[recordVars['accountInTargetInstance']]" doc:name="store account in target instance">
                     <sfdc:query-single config-ref="SalesforceA" query="SELECT Id, Name FROM Account WHERE Name = '#[payload['Account']['Name']]'" doc:name="query account in A instance"/>
                 </enricher>
@@ -108,7 +105,6 @@ payload['Account'].put('NumberOfEmployees', payload['Account']['NumberOfEmployee
                 <expression-component doc:name="set contact's parent account id"><![CDATA[payload.put('AccountId', recordVars['idOfAccountInTargetInstance']);]]></expression-component>
             </batch:step>
             <batch:step name="setDummyAccountIdForAStep" filter-expression="#['A'.equals(flowVars['sourceSystem']) || (! ('assignDummyAccount'=='${account.sync.policy}'))]">
-                <logger message="Hello Step 3 B! Contact name: #[payload['FirstName']] #[payload['LastName']]" level="INFO" doc:name="debug Logger"/>
                 <expression-component doc:name="set contact's parent account id"><![CDATA[payload.put('AccountId', '${account.id.in.a}');]]></expression-component>
             </batch:step>
             

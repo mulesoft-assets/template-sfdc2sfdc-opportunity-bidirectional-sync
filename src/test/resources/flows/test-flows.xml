@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc"
+	xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" version="EE-3.5.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
+
+    <sub-flow name="createOpportunityInAFlow" doc:name="createOpportunityInAFlow">
+	    <sfdc:create config-ref="TestSalesforceA" type="Opportunity" doc:name="Create Opportunity in A">
+	        <sfdc:objects ref="#[payload]"/>
+	    </sfdc:create>
+	    <logger level="INFO" message="Create Opportunities in A result: #[payload]" doc:name="Logger"/>
+	</sub-flow>
+
+    <sub-flow name="createOpportunityInBFlow" doc:name="createOpportunityInBFlow">
+	    <sfdc:create config-ref="TestSalesforceB" type="Opportunity" doc:name="Create Opportunity in B">
+	        <sfdc:objects ref="#[payload]"/>
+	    </sfdc:create>
+	    <logger level="INFO" message="Create Opportunities in B result: #[payload]" doc:name="Logger"/>
+	</sub-flow>
+    
+    <sub-flow name="queryOpportunityFromAFlow" doc:name="queryOpportunityFromAFlow">
+	    <sfdc:query-single config-ref="SalesforceA" query="SELECT Name, Amount, StageName, Probability, CloseDate, AccountId FROM Opportunity WHERE Name = '#[payload['Name']]'" doc:name="Retrieve Opportunity from instance A"/>
+	    <logger level="INFO" message="Query Opportunities result: #[payload]" doc:name="Logger"/>
+	</sub-flow>
+    
+    <sub-flow name="queryOpportunityFromBFlow" doc:name="queryOpportunityFromBFlow">
+	    <sfdc:query-single config-ref="SalesforceB" query="SELECT Name, Amount, StageName, Probability, CloseDate, AccountId FROM Opportunity WHERE Name = '#[payload['Name']]'" doc:name="Retrieve Opportunity from instance B"/>
+	    <logger level="INFO" message="Query Opportunities result: #[payload]" doc:name="Logger"/>
+	</sub-flow>
+    
+	<sub-flow name="deleteOpportunityFromAFlow" doc:name="deleteOpportunityFromAFlow">
+		<sfdc:delete config-ref="SalesforceA" doc:name="Delete Opportunity from instance A">
+	    	<sfdc:ids ref="#[payload]"/>
+	    </sfdc:delete>
+	    <logger level="INFO" message="Remove Opportunities from A result: #[payload]" doc:name="Logger"/>
+	</sub-flow>
+
+	<sub-flow name="deleteOpportunityFromBFlow" doc:name="deleteOpportunityFromBFlow">
+		<sfdc:delete config-ref="SalesforceB" doc:name="Delete Opportunity from instance B">
+	    	<sfdc:ids ref="#[payload]"/>
+	    </sfdc:delete>
+	    <logger level="INFO" message="Remove Opportunities from B result: #[payload]" doc:name="Logger"/>
+	</sub-flow>
+
+	<sfdc:config name="TestSalesforceA" username="${test.sfdc.a.username}"
+		password="${test.sfdc.a.password}" securityToken="${test.sfdc.a.securityToken}"
+		url="${test.sfdc.a.url}" doc:name="Salesforce"
+		doc:description="One of your SalesForce instances, order does not matter.">
+		<sfdc:connection-pooling-profile
+			initialisationPolicy="INITIALISE_ONE" exhaustedAction="WHEN_EXHAUSTED_GROW" />
+	</sfdc:config>
+
+	<sfdc:config name="TestSalesforceB" username="${test.sfdc.b.username}"
+		password="${test.sfdc.b.password}" securityToken="${test.sfdc.b.securityToken}"
+		url="${test.sfdc.b.url}" doc:name="Salesforce"
+		doc:description="Your other SalesForce instances, order does not matter.">
+		<sfdc:connection-pooling-profile
+			initialisationPolicy="INITIALISE_ONE" exhaustedAction="WHEN_EXHAUSTED_GROW" />
+	</sfdc:config>
+
+</mule>

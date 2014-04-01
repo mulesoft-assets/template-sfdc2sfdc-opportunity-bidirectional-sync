@@ -6,7 +6,7 @@
 	<artifactId>template-sfdc2sfdc-bidirectional-opportunity-sync</artifactId>
 	<packaging>mule</packaging>
 	<version>1.0.0-SNAPSHOT</version>
-	<name>sfdc2sfdc-bidirectional-opportunity-sync Mule Template Project</name>
+	<name>template-sfdc2sfdc-bidirectional-opportunity-sync Mule Template Project</name>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -244,9 +244,9 @@
 
 
 	<scm>
-		<connection>scm:git:https://github.com/mulesoft/sfdc2sfdc-bidirectional-opportunity-sync.git</connection>
-		<developerConnection>scm:git:https://github.com/mulesoft/sfdc2sfdc-bidirectional-opportunity-sync.git</developerConnection>
-		<url>http://github.com/mulesoft/sfdc2sfdc-bidirectional-opportunity-sync</url>
+		<connection>scm:git:https://github.com/mulesoft/template-sfdc2sfdc-bidirectional-opportunity-sync.git</connection>
+		<developerConnection>scm:git:https://github.com/mulesoft/template-sfdc2sfdc-bidirectional-opportunity-sync.git</developerConnection>
+		<url>http://github.com/mulesoft/template-sfdc2sfdc-bidirectional-opportunity-sync</url>
 	</scm>
 
 	<!-- plugins for creating site reports -->

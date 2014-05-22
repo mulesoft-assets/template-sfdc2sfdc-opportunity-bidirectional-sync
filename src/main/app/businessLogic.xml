@@ -16,13 +16,13 @@ http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/ba
         <batch:threading-profile poolExhaustedAction="WAIT"/>
         <batch:process-records>
             
-            <batch:step name="getOpportunityInBStep" filter-expression="#['B'.equals(flowVars['sourceSystem'])]">
+            <batch:step name="getOpportunityInBStep" accept-expression="'A'.equals(flowVars['sourceSystem'])">
                 <enricher source="#[payload]" target="#[recordVars['opportunityInTargetInstance']]" doc:name="store opportunity">
 	            	<sfdc:query-single config-ref="SalesforceB" query="SELECT Id, Name, LastModifiedDate FROM Opportunity WHERE (Name = '#[payload['Name']]')" doc:name="query opportunity from B"/>
                 </enricher>
             </batch:step>
             
-            <batch:step name="findOrCreateAccountInBSetp" filter-expression="#['B'.equals(flowVars['sourceSystem']) || (!('syncAccount'=='${account.sync.policy}'))]">
+            <batch:step name="findOrCreateAccountInBSetp" accept-expression="'A'.equals(flowVars['sourceSystem']) &amp;&amp; 'syncAccount' == '${account.sync.policy}'">
                 <enricher source="#[payload]" target="#[recordVars['accountInTargetInstance']]" doc:name="store account in target instance">
                     <sfdc:query-single config-ref="SalesforceB" query="SELECT Id, Name FROM Account WHERE Name = '#[payload['Account']['Name']]'" doc:name="query account in B instance"/>
                 </enricher>
@@ -49,11 +49,11 @@ payload['Account'].put('NumberOfEmployees', payload['Account']['NumberOfEmployee
                 <expression-component doc:name="set contact's parent account id"><![CDATA[payload.put('AccountId', recordVars['idOfAccountInTargetInstance']);]]></expression-component>
             </batch:step>
             
-            <batch:step name="setDummyAccountIdForBStep" filter-expression="#['B'.equals(flowVars['sourceSystem']) || (! ('assignDummyAccount'=='${account.sync.policy}'))]">
+            <batch:step name="setDummyAccountIdForBStep" accept-expression="'A'.equals(flowVars['sourceSystem']) &amp;&amp; 'assignDummyAccount' == '${account.sync.policy}'">
                 <expression-component doc:name="set contact's parent account id"><![CDATA[payload.put('AccountId', '${account.id.in.b}');]]></expression-component>
             </batch:step>
             
-            <batch:step name="upsertOpportunityInBStep" filter-expression="#[('B'.equals(flowVars['sourceSystem'])) || (recordVars['opportunityInTargetInstance'] is NullPayload ? false : (recordVars['opportunityInTargetInstance'].get('LastModifiedDate') &gt;= payload.get('LastModifiedDate')) || ('${sfdc.a.integration.user.id}' == payload.get('LastModifiedById')))]">
+            <batch:step name="upsertOpportunityInBStep" accept-expression="'A'.equals(flowVars['sourceSystem']) &amp;&amp; (recordVars['opportunityInTargetInstance'] is NullPayload || recordVars['opportunityInTargetInstance'].get('LastModifiedDate') &lt; payload.get('LastModifiedDate') &amp;&amp; '${sfdc.a.integration.user.id}' != payload.get('LastModifiedById'))">
 				<expression-component doc:name="prepare opportunity for upsert"><![CDATA[payload.remove('LastModifiedById');
 payload.remove('LastModifiedDate');
 payload.remove('Account');
@@ -72,13 +72,13 @@ if(!(recordVars['opportunityInTargetInstance'] is NullPayload)) {
                 </batch:commit>
             </batch:step>
             
-            <batch:step name="getOpportunityInAStep" filter-expression="#['A'.equals(flowVars['sourceSystem'])]">
+            <batch:step name="getOpportunityInAStep" accept-expression="'B'.equals(flowVars['sourceSystem'])">
                 <enricher source="#[payload]" target="#[recordVars['opportunityInTargetInstance']]" doc:name="store opportunity">
 		            <sfdc:query-single config-ref="SalesforceA" query="SELECT Id, Name, LastModifiedDate FROM Opportunity WHERE (Name = '#[payload['Name']]')" doc:name="query opportunity from A"/>
                 </enricher>
             </batch:step>
             
-            <batch:step name="findOrCreateAccountInASetp" filter-expression="#['A'.equals(flowVars['sourceSystem']) || (!('syncAccount'=='${account.sync.policy}'))]">
+            <batch:step name="findOrCreateAccountInASetp" accept-expression="'B'.equals(flowVars['sourceSystem']) &amp;&amp; 'syncAccount' == '${account.sync.policy}'">
                 <enricher source="#[payload]" target="#[recordVars['accountInTargetInstance']]" doc:name="store account in target instance">
                     <sfdc:query-single config-ref="SalesforceA" query="SELECT Id, Name FROM Account WHERE Name = '#[payload['Account']['Name']]'" doc:name="query account in A instance"/>
                 </enricher>
@@ -104,11 +104,11 @@ payload['Account'].put('NumberOfEmployees', payload['Account']['NumberOfEmployee
                 </choice>
                 <expression-component doc:name="set contact's parent account id"><![CDATA[payload.put('AccountId', recordVars['idOfAccountInTargetInstance']);]]></expression-component>
             </batch:step>
-            <batch:step name="setDummyAccountIdForAStep" filter-expression="#['A'.equals(flowVars['sourceSystem']) || (! ('assignDummyAccount'=='${account.sync.policy}'))]">
+            <batch:step name="setDummyAccountIdForAStep" accept-expression="'B'.equals(flowVars['sourceSystem']) &amp;&amp; 'assignDummyAccount' == '${account.sync.policy}'">
                 <expression-component doc:name="set contact's parent account id"><![CDATA[payload.put('AccountId', '${account.id.in.a}');]]></expression-component>
             </batch:step>
             
-            <batch:step name="upsertOpportunityInAStep" filter-expression="#[('A'.equals(flowVars['sourceSystem'])) || (recordVars['opportunityInTargetInstance'] is NullPayload ? false : (recordVars['opportunityInTargetInstance'].get('LastModifiedDate') &gt;= payload.get('LastModifiedDate')) || ('${sfdc.b.integration.user.id}' == payload.get('LastModifiedById')))]">
+            <batch:step name="upsertOpportunityInAStep" accept-expression="'B'.equals(flowVars['sourceSystem']) &amp;&amp; (recordVars['opportunityInTargetInstance'] is NullPayload || recordVars['opportunityInTargetInstance'].get('LastModifiedDate') &lt; payload.get('LastModifiedDate') &amp;&amp; '${sfdc.b.integration.user.id}' != payload.get('LastModifiedById'))">
 				<expression-component doc:name="prepare opportunity for upsert"><![CDATA[payload.remove('LastModifiedById');
 payload.remove('LastModifiedDate');
 payload.remove('Account');

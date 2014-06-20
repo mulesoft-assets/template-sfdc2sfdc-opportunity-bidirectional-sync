@@ -170,11 +170,8 @@ public class BusinessLogicTestDoNotCreateAccountIT extends AbstractTemplatesTest
 		Map<String, String> retrievedOpportunityFromB = (Map<String, String>) queryOpportunity(
 				opportunity.build(), queryOpportunityFromBFlow);
 
-		final MapDifference<String, String> mapsDifference = Maps.difference(
-				retrievedOpportunityFromA, retrievedOpportunityFromB);
-		Assert.assertTrue(
-				"Some opportunities are not synchronized between systems. "
-						+ mapsDifference.toString(), mapsDifference.areEqual());
+		Assert.assertNotNull("There should be some opportunity in org B", retrievedOpportunityFromB);
+		Assert.assertEquals("Opportunities should be synced",retrievedOpportunityFromA.get("Name"), retrievedOpportunityFromB.get("Name"));
 	}
 
 	private Object queryOpportunity(Map<String, Object> opportunity,

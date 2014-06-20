@@ -41,7 +41,7 @@ public class BusinessLogicTestAssignDummyAccountIT extends AbstractTemplatesTest
 	private static final String A_INBOUND_FLOW_NAME = "triggerSyncFromAFlow";
 	private static final String B_INBOUND_FLOW_NAME = "triggerSyncFromBFlow";
 	private static final String ANYPOINT_TEMPLATE_NAME = "sfdc2sfdc-bidirectional-opportunity-sync";
-	private static final String ACCOUNT_ID_IN_B = "001n0000003hHsEAAU";
+	private static final String ACCOUNT_ID_IN_B = "0012000001AHHlv";
 	private static final int TIMEOUT_MILLIS = 60;
 
 	private static List<String> opportunitiesCreatedInA = new ArrayList<String>();
@@ -172,11 +172,8 @@ public class BusinessLogicTestAssignDummyAccountIT extends AbstractTemplatesTest
 		Map<String, String> retrievedOpportunityFromB = (Map<String, String>) queryOpportunity(
 				opportunity.build(), queryOpportunityFromBFlow);
 
-		final MapDifference<String, String> mapsDifference = Maps.difference(
-				retrievedOpportunityFromA, retrievedOpportunityFromB);
-		Assert.assertTrue(
-				"Some opportunities are not synchronized between systems. "
-						+ mapsDifference.toString(), mapsDifference.areEqual());
+		Assert.assertNotNull("There should be some opportunity in org B", retrievedOpportunityFromB);
+		Assert.assertEquals("Opportunities should be synced",retrievedOpportunityFromA.get("Name"), retrievedOpportunityFromB.get("Name"));
 	}
 
 	private Object queryOpportunity(Map<String, Object> opportunity,

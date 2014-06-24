@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+<configuration>
+	<placeholders>
+		<placeholder id="template_name">Salesforce to Salesforce Opportunity Bidirectional Sync</placeholder>
+	</placeholders>
+	<sections>
+		<section id="use_case">
+As a Salesforce admin, I want to have my opportunities synchronized between two different Salesforce organizations
+
+## Template overview <a name="templateoverview"/>
+
+Let's say we want to keep Salesforce instance *A* synchronized with Salesforce instance *B*. Then, the integration behavior can be summarized just with the following steps:
+
+1. Ask Salesforce *A*:
+> *Which changes have there been since the last time I got in touch with you?*
+
+2. For each of the updates fetched in the previous step (1.), ask Salesforce *B*:
+> *Does the update received from A should be applied?*
+
+3. If Salesforce answer for the previous question (2.) is *Yes*, then *upsert* (create or update depending each particular case) B with the belonging change
+
+4. Repeat previous steps (1. to 3.) the other way around (using *B* as source instance and *A* as the target one)
+
+ Repeat *ad infinitum*:
+
+5. Ask Salesforce *A*:
+> *Which changes have there been since the question I've made in the step 1.?*
+
+And so on...
+  
+The question for recent changes since a certain moment in nothing but a [poll inbound][1] with a [watermark][2] defined.
+		</section>
+		<section id="considerations">
+<![CDATA[
+To make this Anypoint Template run, there are certain preconditions that must be considered. All of them deal with the preparations in both, that must be made in order for all to run smoothly. **Failling to do so could lead to unexpected behavior of the template.**
+]]>
+		</section>
+		<section id="application_configuration">
+		<![CDATA[
++ polling.frequency `10000`  
+This are the miliseconds (also different time units can be used) that will run between two different checks for updates in Salesforce
+
++ watermark.default.expression `2014-02-25T11:00:00.000Z`  
+This property is an important one, as it configures what should be the start point of the synchronization.The date format accepted in SFDC Query Language is either *YYYY-MM-DDThh:mm:ss+hh:mm* or you can use Constants. [More information about Dates in SFDC](http://www.salesforce.com/us/developer/docs/officetoolkit/Content/sforce_api_calls_soql_select_dateformats.htm)
+
+### SalesForce Connector configuration for company A
++ sfdc.a.username `jorge.drexler@mail.com`
++ sfdc.a.password `Noctiluca123`
++ sfdc.a.securityToken `avsfwCUl7apQs56Xq2AKi3X`
++ sfdc.a.url `https://login.salesforce.com/services/Soap/u/28.0`
+
+### SalesForce Connector configuration for company B
++ sfdc.b.username `mariano.cozzi@mail.com`
++ sfdc.b.password `LaRanitaDeLaBicicleta456`
++ sfdc.b.securityToken `ces56arl7apQs56XTddf34X`
++ sfdc.b.url `https://login.salesforce.com/services/Soap/u/28.0`
+]]>
+		</section>
+		<section id="api_calls">
+		<![CDATA[
+Salesforce imposes limits on the number of API Calls that can be made. Therefore calculating this amount may be an important factor to consider. The Anypoint Template calls to the API can be calculated using the formula:
+
+***1 + X + X / 200***
+
+Being ***X*** the number of Opportunities to be synchronized on each run. 
+
+The division by ***200*** is because, by default, Opportunities are gathered in groups of 200 for each Upsert API Call in the commit step. Also consider that this calls are executed repeatedly every polling cycle.	
+
+For instance if 10 records are fetched from origin instance, then 12 api calls will be made (1 + 10 + 1).
+]]>
+		</section>
+		<section id="default_endpoints_xml">
+		<![CDATA[
+This file should contain every inbound and outbound endpoint of your integration app. It is intented to contain the application API.
+In this particular template, this file contains a couple of poll inbound endpoints that query salesforce for updates using watermark as mentioned before.
+]]>
+		</section>
+		<section id="default_business_logic_xml">
+		<![CDATA[
+This file holds the functional aspect of the template (points 2. to 4. described in the [template overview](#templateoverview)). Its main component is a [*Batch job*][8], and it includes *steps* for both executing the synchronization from Salesforce instance A to Salesforce instance B, and the other way around.
+]]>
+		</section>
+	</sections>
+</configuration>

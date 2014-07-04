@@ -62,3 +62,7 @@ src/main/app/test-flows.xml
 **.DS_Store
 
 
+
+pom.xml.releaseBackup
+
+release.properties

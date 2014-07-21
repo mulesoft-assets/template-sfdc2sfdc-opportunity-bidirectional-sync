@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <mule-project xmlns="http://www.mulesoft.com/tooling/project" runtimeId="org.mule.tooling.server.3.5.0.ee" schemaVersion="3.5.0.0">
-    <name>sfdc2sfdc-bidirectional-contact-sync</name>
-    <description></description>
+    <name>template-sfdc2sfdc-opportunity-bidirectional-sync</name>
+    <description/>
     <muleExtension name="ObjectStore" qualifier="org.mule.tooling.ui.contribution.objectstore"/>
 </mule-project>

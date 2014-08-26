@@ -61,6 +61,10 @@ src/main/app/test-flows.xml
 # ------------ #
 **.DS_Store
 
+# --------------------------------------- #
+# Test credentials to be use locally only #
+# --------------------------------------- #
+src/test/resources/mule.test.properties
 
 
 pom.xml.releaseBackup

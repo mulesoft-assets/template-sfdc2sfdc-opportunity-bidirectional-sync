@@ -1,0 +1,26 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+ <soapenv:Body>
+  <notifications xmlns="http://soap.sforce.com/2005/09/outbound">
+   <OrganizationId>00D20000000nW6IEAU</OrganizationId>
+   <ActionId>04k20000000PBtQAAW</ActionId>
+   <SessionId xsi:nil="true"/>
+   <EnterpriseUrl>https://emea.salesforce.com/services/Soap/c/31.0/00D20000000nW6I</EnterpriseUrl>
+   <PartnerUrl>https://emea.salesforce.com/services/Soap/u/31.0/00D20000000nW6I</PartnerUrl>
+   <Notification>
+    <Id>04l2000000L3O3xAAF</Id>
+    <sObject xsi:type="sf:Opportunity" xmlns:sf="urn:sobject.enterprise.soap.sforce.com">
+     <sf:Id>0062000000Y7eXYAAZ</sf:Id>
+     <sf:AccountId>0012000001AHHlvAAH</sf:AccountId>
+     <sf:Amount>123456.0</sf:Amount>
+     <sf:CloseDate>2014-06-18</sf:CloseDate>
+     <sf:CreatedDate>2014-06-20T09:27:11.000Z</sf:CreatedDate>
+     <sf:Description>sfdc2sfdctest</sf:Description>
+     <sf:IsClosed>false</sf:IsClosed>
+     <sf:Name>sfdc2sfdctest</sf:Name>
+     <sf:Probability>2.0</sf:Probability>
+     <sf:StageName>Stage Two</sf:StageName>
+    </sObject>
+   </Notification>
+  </notifications>
+ </soapenv:Body>
+</soapenv:Envelope>

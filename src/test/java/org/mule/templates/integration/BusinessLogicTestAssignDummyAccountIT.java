@@ -31,8 +31,6 @@ import org.mule.processor.chain.SubflowInterceptingChainLifecycleWrapper;
 import org.mule.templates.AbstractTemplatesTestCase;
 import org.mule.templates.builders.SfdcObjectBuilder;
 
-import com.google.common.collect.MapDifference;
-import com.google.common.collect.Maps;
 import com.mulesoft.module.batch.BatchTestHelper;
 import com.sforce.soap.partner.SaveResult;
 
@@ -76,6 +74,7 @@ public class BusinessLogicTestAssignDummyAccountIT extends AbstractTemplatesTest
 		System.setProperty("watermark.default.expression",
 				now.toString(dateFormat));
 
+		System.setProperty("trigger.policy", "poll");
 		System.setProperty("account.sync.policy", "assignDummyAccount");
 		System.setProperty("account.id.in.b", ACCOUNT_ID_IN_B);
 	}
@@ -93,6 +92,7 @@ public class BusinessLogicTestAssignDummyAccountIT extends AbstractTemplatesTest
 		System.clearProperty("polling.frequency");
 		System.clearProperty("watermark.default.expression");
 		System.clearProperty("account.sync.policy");
+		System.clearProperty("trigger.policy");
 	}
 
 	@After

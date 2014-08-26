@@ -49,10 +49,11 @@ Let's say we want to keep Salesforce instance *A* synchronized with Salesforce i
 And so on...
  
 The question for recent changes since a certain moment in nothing but a [poll inbound][1] with a [watermark][2] defined.
+
 As implemented, this Anypoint Template also leverage [Outbound messaging](https://www.salesforce.com/us/developer/docs/api/Content/sforce_api_om_outboundmessaging.htm)
 The integration could be also triggered by http inbound connector defined in the flow that is going to trigger the application and executing the batch job with received message from Salesforce source instance.
 Outbound messaging in Salesforce allows you to specify that changes to fields within Salesforce can cause messages with field values to be sent to designated external servers.
-Outbound messaging is part of the workflow rule functionality in Salesforce. Workflow rules watch for specific kinds of field changes and trigger automatic Salesforce actions in this case sending contacts as an outbound message to Mule Http inbound connector,
+Outbound messaging is part of the workflow rule functionality in Salesforce. Workflow rules watch for specific kinds of field changes and trigger automatic Salesforce actions in this case sending opportunities as an outbound message to Mule Http inbound connector,
 which will then further process this message and creates Opportunity in target Salesforce org.
 
 # Considerations <a name="considerations"/>
@@ -147,7 +148,9 @@ Complete all properties in one of the property files, for example in [mule.prod.
 
 ## Running on CloudHub <a name="runoncloudhub"/>
 While [creating your application on CloudHub](http://www.mulesoft.org/documentation/display/current/Hello+World+on+CloudHub) (Or you can do it later as a next step), you need to go to Deployment > Advanced to set all environment variables detailed in **Properties to be configured** as well as the **mule.env**.
-
+Once your app is all set and started, you will need to define Salesforce outbound messaging and a simple workflow rule. [This article will show you how to accomplish this](https://www.salesforce.com/us/developer/docs/api/Content/sforce_api_om_outboundmessaging_setting_up.htm)
+The most important setting here is the `Endpoint URL` which needs to point to your application running on Cloudbhub, eg. `http://yourapp.cloudhub.io:80/?source=value`. Value for source parameter could be `A` for source outbound messaging for organization A or `B` for organization B. Additionaly, try to add just few fields to the `Fields to Send` to keep it simple for begin.
+Once this all is done every time when you will make a change on Account in source Salesforce org. This account will be sent as a SOAP message to the Http endpoint of running application in Cloudhub.
 
 ### Deploying your Anypoint Template on CloudHub <a name="deployingyouranypointtemplateoncloudhub"/>
 Mule Studio provides you with really easy way to deploy your Template directly to CloudHub, for the specific steps to do so please check this [link](http://www.mulesoft.org/documentation/display/current/Deploying+Mule+Applications#DeployingMuleApplications-DeploytoCloudHub)
@@ -190,6 +193,8 @@ Being ***X*** the number of Opportunities to be synchronized on each run.
 The division by ***200*** is because, by default, Opportunities are gathered in groups of 200 for each Upsert API Call in the commit step. Also consider that this calls are executed repeatedly every polling cycle.	
 
 For instance if 10 records are fetched from origin instance, then 12 api calls will be made (1 + 10 + 1).
+
+When the outbound messaging is enabled in Salesforce and template trigger policy is push, specify as url get parameter saleforce's source organization eg. http://yourapp.cloudhub.io:80/?source=A
 
 
 # Customize It!<a name="customizeit"/>

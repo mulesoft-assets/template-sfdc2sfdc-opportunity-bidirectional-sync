@@ -47,8 +47,13 @@ Let's say we want to keep Salesforce instance *A* synchronized with Salesforce i
 > *Which changes have there been since the question I've made in the step 1.?*
 
 And so on...
-  
+ 
 The question for recent changes since a certain moment in nothing but a [poll inbound][1] with a [watermark][2] defined.
+As implemented, this Anypoint Template also leverage [Outbound messaging](https://www.salesforce.com/us/developer/docs/api/Content/sforce_api_om_outboundmessaging.htm)
+The integration could be also triggered by http inbound connector defined in the flow that is going to trigger the application and executing the batch job with received message from Salesforce source instance.
+Outbound messaging in Salesforce allows you to specify that changes to fields within Salesforce can cause messages with field values to be sent to designated external servers.
+Outbound messaging is part of the workflow rule functionality in Salesforce. Workflow rules watch for specific kinds of field changes and trigger automatic Salesforce actions in this case sending contacts as an outbound message to Mule Http inbound connector,
+which will then further process this message and creates Opportunity in target Salesforce org.
 
 # Considerations <a name="considerations"/>
 
@@ -156,6 +161,10 @@ This are the miliseconds (also different time units can be used) that will run b
 
 + watermark.default.expression `2014-02-25T11:00:00.000Z`  
 This property is an important one, as it configures what should be the start point of the synchronization.The date format accepted in SFDC Query Language is either *YYYY-MM-DDThh:mm:ss+hh:mm* or you can use Constants. [More information about Dates in SFDC](http://www.salesforce.com/us/developer/docs/officetoolkit/Content/sforce_api_calls_soql_select_dateformats.htm)
+
+### Trigger policy(push, poll)
++ trigger.policy `poll`
+This property define, which policy should be used for synchronization. When the push policy is selected, the http inbound connector is used for Salesforce's outbound messaging and polling mechanism is ignored.
 
 ### SalesForce Connector configuration for company A
 + sfdc.a.username `jorge.drexler@mail.com`

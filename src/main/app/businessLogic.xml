@@ -137,11 +137,26 @@ payload['Account'].put('NumberOfEmployees', payload['Account']['NumberOfEmployee
 payload.remove('LastModifiedDate');
 payload.remove('Account');
 
-java.util.Date dateCloseDate = new java.text.SimpleDateFormat("yyyy-MM-dd").parse(payload.get('CloseDate'));
-payload.put('CloseDate', dateCloseDate);
-
 if(!(recordVars['opportunityInTargetInstance'] is NullPayload)) {
 	payload.put('Id',recordVars['opportunityInTargetInstance'].get('Id'));
+}
+
+if (payload.get('Amount') == null) {
+	payload.remove('Amount') 
+} else {
+	if(payload.get('Amount') instanceof  String) {
+		double doubleAmount = Double.parseDouble(payload.get('Amount'));
+		payload.put('Amount', doubleAmount);
+	}
+}
+
+if (payload.get('CloseDate') == null) {
+	payload.remove('CloseDate') 
+} else {
+    if(payload.get('CloseDate') instanceof String) {
+		java.util.Date dateCloseDate = new java.text.SimpleDateFormat("yyyy-MM-dd").parse(payload.get('CloseDate'));
+		payload.put('CloseDate', dateCloseDate);
+	}
 }]]></expression-component>
                 <batch:commit size="200" doc:name="Batch Commit">
 			        <sfdc:upsert config-ref="SalesforceA" externalIdFieldName="Id" type="Opportunity" doc:name="upsert opportunity in A">
@@ -156,8 +171,5 @@ if(!(recordVars['opportunityInTargetInstance'] is NullPayload)) {
             <expression-component doc:name="unlock processing"><![CDATA[#[app.registry['PollSynchronizer'].unlock()]]]></expression-component>
         </batch:on-complete>
     </batch:job>
-    <flow name="Copy_of_businessLogicFlow1" doc:name="Copy_of_businessLogicFlow1">
-        <logger message="OPORRTUNITY IN TARGET INSTANCE: #[(recordVars['opportunityInTargetInstance'] is NullPayload)]" level="INFO" doc:name="Copy_of_Logger"/>
-    </flow>
     
 </mule>

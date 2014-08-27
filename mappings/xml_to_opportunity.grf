@@ -76,7 +76,6 @@
 //START -> DO NOT REMOVE
 output.__id = input.__id;
 //END -> DO NOT REMOVE
-output.AccountId = input.AccountId;
 output.Amount = num2str(input.Amount);
 output.CloseDate = date2calendar(input.CloseDate);
 output.Description = input.Description;

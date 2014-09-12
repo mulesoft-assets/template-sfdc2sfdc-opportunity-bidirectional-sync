@@ -161,7 +161,7 @@ public class BusinessLogicPushNotificationIT extends AbstractTemplatesTestCase {
 		request.append("       <sf:Id>0062000000ZZpewAAD</sf:Id>");
 		request.append("       <sf:AccountId>0012000001AOHpxAAH</sf:AccountId>");
 		request.append("       <sf:Amount>12.0</sf:Amount>");
-		request.append("       <sf:CloseDate>2017-08-04</sf:CloseDate>");
+		request.append("       <sf:CloseDate>2011-08-04</sf:CloseDate>");
 		request.append("       <sf:Description>description</sf:Description>");
 		request.append("       <sf:LastModifiedDate>2014-08-20T11:16:04.000Z</sf:LastModifiedDate>");
 		request.append("       <sf:Name>" + name + "</sf:Name>");

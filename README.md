@@ -150,7 +150,7 @@ Complete all properties in one of the property files, for example in [mule.prod.
 While [creating your application on CloudHub](http://www.mulesoft.org/documentation/display/current/Hello+World+on+CloudHub) (Or you can do it later as a next step), you need to go to Deployment > Advanced to set all environment variables detailed in **Properties to be configured** as well as the **mule.env**.
 Once your app is all set and started, you will need to define Salesforce outbound messaging and a simple workflow rule. [This article will show you how to accomplish this](https://www.salesforce.com/us/developer/docs/api/Content/sforce_api_om_outboundmessaging_setting_up.htm)
 The most important setting here is the `Endpoint URL` which needs to point to your application running on Cloudbhub, eg. `http://yourapp.cloudhub.io:80/?source=value`. Value for source parameter could be `A` for source outbound messaging for organization A or `B` for organization B. Additionaly, try to add just few fields to the `Fields to Send` to keep it simple for begin.
-Once this all is done every time when you will make a change on Account in source Salesforce org. This account will be sent as a SOAP message to the Http endpoint of running application in Cloudhub.
+Once this all is done every time when you will make a change on Opportunity in source Salesforce org. This Opportunity will be sent as a SOAP message to the Http endpoint of running application in Cloudhub.
 
 ### Deploying your Anypoint Template on CloudHub <a name="deployingyouranypointtemplateoncloudhub"/>
 Mule Studio provides you with really easy way to deploy your Template directly to CloudHub, for the specific steps to do so please check this [link](http://www.mulesoft.org/documentation/display/current/Deploying+Mule+Applications#DeployingMuleApplications-DeploytoCloudHub)
@@ -195,6 +195,7 @@ The division by ***200*** is because, by default, Opportunities are gathered in 
 For instance if 10 records are fetched from origin instance, then 12 api calls will be made (1 + 10 + 1).
 
 When the outbound messaging is enabled in Salesforce and template trigger policy is push, specify as url get parameter saleforce's source organization eg. http://yourapp.cloudhub.io:80/?source=A
+Also consider that all required fields of Opportunity in Salesforce should be added for the outbound messaging.
 
 
 # Customize It!<a name="customizeit"/>

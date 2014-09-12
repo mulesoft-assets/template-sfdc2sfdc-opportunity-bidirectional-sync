@@ -21,23 +21,27 @@ http://www.mulesoft.org/schema/mule/ee/data-mapper http://www.mulesoft.org/schem
                 <expression-component doc:name="lock processing to avoid two syncs occurring at the same time"><![CDATA[app.registry['PollSynchronizer'].lock();]]></expression-component>
                 <set-variable variableName="sourceSystem" value="#[message.inboundProperties['source']]" doc:name="set 'sourceSystem' variable"/>
                 <object-to-string-transformer doc:name="Object to String"/>
-                <logger message="Message from outbound : #[payload]" level="INFO" doc:name="Log input payload"/>
+
                 <data-mapper:transform config-ref="XML_To_Opportunity" doc:name="XML To Opportunity"/>
                 <foreach doc:name="For Each Opportunity">
                     <expression-component doc:name="transform LastModifiedDate Calendar to String"><![CDATA[import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.TimeZone;
+import java.util.Calendar;
+
+// Calculate current timezone offset 
+Calendar calNow = Calendar.getInstance();
+calNow.setTimeInMillis(System.currentTimeMillis());
 
 // Format LastModifiedDate to Salesforce specific format
 SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
-formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-String date = formatter.format(new Date());
+Calendar cal = payload.LastModifiedDate;
+String date = formatter.format(new Date(cal.getTimeInMillis() - calNow.getTimeZone().getOffset(System.currentTimeMillis()) ));
 
 // Update LastModifiedDate with computed value
 payload.put("LastModifiedDate", date+"Z");]]></expression-component>
-                    <logger message="LASTMODIFIED: #[payload.get('LastModifiedDate')]" level="INFO" doc:name="Logger"/>
                 </foreach>
+
                 <choice doc:name="Trigger target system destination">
                     <when expression="#[flowVars['sourceSystem'] == 'A']">
                         <batch:execute name="syncBatchA" doc:name="trigger batch execution for syncBatchA"/>
@@ -46,6 +50,7 @@ payload.put("LastModifiedDate", date+"Z");]]></expression-component>
                         <batch:execute name="syncBatchB" doc:name="trigger batch execution for syncBatchB"/>
                     </when>
                     <otherwise>
+                        <expression-component doc:name="unlock processing"><![CDATA[#[app.registry['PollSynchronizer'].unlock()]]]></expression-component>
                         <logger message="'sourceSystem' variable not found - message ignored" level="INFO" doc:name="Logger"/>
                     </otherwise>
                 </choice>

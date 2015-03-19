@@ -24,6 +24,7 @@ import org.mule.MessageExchangePattern;
 import org.mule.api.MuleEvent;
 import org.mule.api.MuleException;
 import org.mule.api.MuleMessage;
+import org.mule.api.transport.PropertyScope;
 import org.mule.construct.Flow;
 import org.mule.processor.chain.InterceptingChainLifecycleWrapper;
 import org.mule.processor.chain.SubflowInterceptingChainLifecycleWrapper;
@@ -115,8 +116,9 @@ public class BusinessLogicPushNotificationIT extends AbstractTemplatesTestCase {
 		// Execution
 		String name = buildUniqueName();
 		MuleMessage message = new DefaultMuleMessage(buildRequest(name), muleContext);
+		message.setProperty("source", SOURCE_SYSTEM, PropertyScope.INBOUND);
 		MuleEvent testEvent = getTestEvent(message, MessageExchangePattern.REQUEST_RESPONSE);
-		testEvent.setFlowVariable("sourceSystem", SOURCE_SYSTEM);
+		
 		triggerPushFlow.process(testEvent);
 		
 		helper.awaitJobTermination(TIMEOUT_MILLIS * 1000, 500);

@@ -45,7 +45,6 @@ public class BusinessLogicTestCreateAccountIT extends AbstractTemplatesTestCase 
 	private static final String A_INBOUND_FLOW_NAME = "triggerSyncFromAFlow";
 	private static final String B_INBOUND_FLOW_NAME = "triggerSyncFromBFlow";
 	private static final String ANYPOINT_TEMPLATE_NAME = "sfdc2sfdc-bidirectional-opportunity-sync";
-	private static final String ACCOUNT_ID_IN_B = "0012000001OolOiAAJ";
 	private static final int TIMEOUT_MILLIS = 60;
 
 	private static List<String> accountsCreatedInA = new ArrayList<String>();
@@ -98,10 +97,6 @@ public class BusinessLogicTestCreateAccountIT extends AbstractTemplatesTestCase 
 		System.clearProperty("trigger.policy");
 	}
 
-	@After
-	public void tearDown() throws MuleException, Exception {
-		
-	}
 
 	private void stopAutomaticPollTriggering() throws MuleException {
 		stopFlowSchedulers(A_INBOUND_FLOW_NAME);

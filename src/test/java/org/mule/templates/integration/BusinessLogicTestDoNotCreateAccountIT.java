@@ -90,7 +90,6 @@ public class BusinessLogicTestDoNotCreateAccountIT extends AbstractTemplatesTest
 		System.clearProperty("watermark.default.expression");
 		System.clearProperty("account.sync.policy");
 		System.clearProperty("trigger.policy");
-//		cleanUpSandboxesByRemovingTestOpportunities();
 	}
 
 	@After

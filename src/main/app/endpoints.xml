@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:data-mapper="http://www.mulesoft.org/schema/mule/ee/data-mapper" xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+<mule version="EE-3.7.1"
+	xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" 
+	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" 
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
 	xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
-	xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns:http="http://www.mulesoft.org/schema/mule/http"
-	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:spring="http://www.springframework.org/schema/beans" version="EE-3.6.1"
+	xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" 
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" 
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
 http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
@@ -12,8 +17,8 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
 http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
-http://www.mulesoft.org/schema/mule/ee/data-mapper http://www.mulesoft.org/schema/mule/ee/data-mapper/current/mule-data-mapper.xsd">
-    <data-mapper:config name="XML_To_Opportunity" transformationGraphPath="xml_to_opportunity.grf" doc:name="XML_To_Opportunity"/>
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+
     <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="${http.port}" doc:name="HTTP Listener Configuration"/>
     <flow name="triggerPushFlow"  initialState="started">
         <http:listener config-ref="HTTP_Listener_Configuration" path="/" doc:name="HTTP"/>
@@ -21,35 +26,23 @@ http://www.mulesoft.org/schema/mule/ee/data-mapper http://www.mulesoft.org/schem
         <choice doc:name="Trigger Policy">
             <when expression="#['push' == '${trigger.policy}']">
                 <expression-component doc:name="lock processing to avoid two syncs occurring at the same time"><![CDATA[app.registry['PollSynchronizer'].lock();]]></expression-component>
-                <set-variable variableName="sourceSystem" value="#[message.inboundProperties['source']]" doc:name="set 'sourceSystem' variable"/>
-                <object-to-string-transformer doc:name="Object to String"/>
+                <set-variable variableName="sourceSystem" value="#[message.inboundProperties.'http.query.params'.source]" doc:name="set 'sourceSystem' variable"/>
+                <dw:transform-message doc:name="Transform XML to Opportunity">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
 
-                <data-mapper:transform config-ref="XML_To_Opportunity" doc:name="XML To Opportunity"/>
-                <foreach doc:name="For Each Opportunity">
-                    <expression-component doc:name="transform LastModifiedDate Calendar to String"><![CDATA[import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Calendar;
+payload.Envelope.Body.notifications.Notification.*sObject
+]]></dw:set-payload>
+                </dw:transform-message>
 
-// Calculate current timezone offset 
-Calendar calNow = Calendar.getInstance();
-calNow.setTimeInMillis(System.currentTimeMillis());
-
-// Format LastModifiedDate to Salesforce specific format
-SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
-
-Calendar cal = payload.LastModifiedDate;
-String date = formatter.format(new Date(cal.getTimeInMillis() - calNow.getTimeZone().getOffset(System.currentTimeMillis()) ));
-
-// Update LastModifiedDate with computed value
-payload.put("LastModifiedDate", date+"Z");]]></expression-component>
-                </foreach>
 
                 <choice doc:name="Trigger target system destination">
-                    <when expression="#[flowVars['sourceSystem'] == 'A']">
-                        <batch:execute name="syncBatchA" doc:name="trigger batch execution for syncBatchA"/>
+                    <when expression="#[flowVars.sourceSystem == 'A']">
+                        <batch:execute name="syncOpportunityA2B" doc:name="trigger batch execution for syncOpportunityA2B"/>
                     </when>
-                    <when expression="#[flowVars['sourceSystem'] == 'B']">
-                        <batch:execute name="syncBatchB" doc:name="trigger batch execution for syncBatchB"/>
+                    <when expression="#[flowVars.sourceSystem == 'B']">
+                        <batch:execute name="syncOpportunityB2A" doc:name="trigger batch execution for syncOpportunityB2A"/>
                     </when>
                     <otherwise>
                         <expression-component doc:name="unlock processing"><![CDATA[#[app.registry['PollSynchronizer'].unlock()]]]></expression-component>
@@ -57,6 +50,7 @@ payload.put("LastModifiedDate", date+"Z");]]></expression-component>
                     </otherwise>
                 </choice>
             </when>
+
             <otherwise>
                 <logger message="Trigger policy has been set to POLL. Skipping this message" level="INFO" doc:name="Logger"/>
             </otherwise>
@@ -70,17 +64,19 @@ payload.put("LastModifiedDate", date+"Z");]]></expression-component>
 
     <flow name="triggerSyncFromAFlow"  processingStrategy="synchronous" initialState="started">
 		<poll doc:name="Poll">
-			<fixed-frequency-scheduler frequency="${polling.frequency}" startDelay="10000" />
+			<fixed-frequency-scheduler frequency="${poll.frequencyMillis}" startDelay="10000" />
 			<watermark variable="lastQueryDateA" default-expression="${watermark.default.expression}" selector="MAX" selector-expression="#[payload.LastModifiedDate]" />
             <processor-chain doc:name="Processor Chain">
-                <sfdc:query config-ref="SalesforceA" query="dsql:SELECT Account.Id,Account.Name,Account.AccountNumber,Account.Description,Account.Industry,Account.NumberOfEmployees,Account.ParentId,Amount,CloseDate,LastModifiedById,LastModifiedDate,Name,StageName FROM Opportunity WHERE (Amount &gt; 5000 AND LastModifiedDate &gt; #[flowVars['lastQueryDateA']]) ORDER BY LastModifiedDate ASC LIMIT 200" doc:name="fetch opportunities from A"/>
+                <sfdc:query config-ref="SalesforceA" query="dsql:SELECT Account.Id,Account.Name,Account.AccountNumber,Account.Description,Account.Industry,Account.NumberOfEmployees,Account.ParentId,Amount,CloseDate,LastModifiedById,LastModifiedDate,Name,StageName, Description FROM Opportunity WHERE (Amount &gt; 5000 AND LastModifiedDate &gt; #[flowVars.lastQueryDateA]) AND (LastModifiedById &lt;&gt; '${sfdc.a.integration.user.id}') ORDER BY LastModifiedDate ASC LIMIT 200" doc:name="fetch opportunities from A"/>
+
             </processor-chain>
 
 		</poll>
         <choice doc:name="Trigger Policy">
             <when expression="#['poll' == '${trigger.policy}']">
                 <expression-component doc:name="lock processing to avoid two syncs occurring at the same time"><![CDATA[app.registry['PollSynchronizer'].lock();]]></expression-component>
-                <batch:execute name="syncBatchA" doc:name="trigger syncBatchA execution"/>
+                <batch:execute name="syncOpportunityA2B" doc:name="trigger syncOpportunityA2B execution"/>
+
             </when>
             <otherwise>
                 <logger message="Trigger policy has been set to PUSH. Skipping this message" level="INFO" doc:name="Logger"/>
@@ -90,18 +86,18 @@ payload.put("LastModifiedDate", date+"Z");]]></expression-component>
     </flow>
     
 	<flow name="triggerSyncFromBFlow"  processingStrategy="synchronous" initialState="started">
-   		<poll doc:name="Poll">
-			<fixed-frequency-scheduler frequency="${polling.frequency}" startDelay="10000" />
-			<watermark variable="lastQueryDateB" default-expression="${watermark.default.expression}" selector="MAX" selector-expression="#[payload.LastModifiedDate]" />
+        <poll doc:name="Poll">
+            <fixed-frequency-scheduler frequency="${poll.frequencyMillis}" startDelay="10000"/>
+            <watermark variable="lastQueryDateB" default-expression="${watermark.default.expression}" selector="MAX" selector-expression="#[payload.LastModifiedDate]"/>
             <processor-chain doc:name="Processor Chain">
-                <sfdc:query config-ref="SalesforceB" query="dsql:SELECT Account.Id,Account.Name,Account.AccountNumber,Account.Description,Account.Industry,Account.NumberOfEmployees,Account.ParentId,Amount,CloseDate,LastModifiedById,LastModifiedDate,Name,StageName FROM Opportunity WHERE (Amount &gt; 5000 AND LastModifiedDate &gt; #[flowVars['lastQueryDateB']]) ORDER BY LastModifiedDate ASC LIMIT 200" doc:name="fetch opportunities from B"/>
+                <sfdc:query config-ref="SalesforceB" query="dsql:SELECT Account.Id,Account.Name,Account.AccountNumber,Account.Description,Account.Industry,Account.NumberOfEmployees,Account.ParentId,Amount,CloseDate,LastModifiedById,LastModifiedDate,Name,StageName, Description FROM Opportunity WHERE (Amount &gt; 5000 AND LastModifiedDate &gt; #[flowVars.lastQueryDateB]) AND (LastModifiedById &lt;&gt; '${sfdc.b.integration.user.id}') ORDER BY LastModifiedDate ASC LIMIT 200" doc:name="fetch opportunities from B"/>
             </processor-chain>
+        </poll>
 
-		</poll>
         <choice doc:name="Trigger Policy">
             <when expression="#['poll' == '${trigger.policy}']">
                 <expression-component doc:name="lock processing to avoid two syncs occurring at the same time"><![CDATA[app.registry['PollSynchronizer'].lock();]]></expression-component>
-                <batch:execute name="syncBatchB" doc:name="trigger syncBatchB execution"/>
+                <batch:execute name="syncOpportunityB2A" doc:name="trigger syncOpportunityB2A execution"/>
             </when>
             <otherwise>
                 <logger message="Trigger policy has been set to PUSH. Skipping this message" level="INFO" doc:name="Logger"/>

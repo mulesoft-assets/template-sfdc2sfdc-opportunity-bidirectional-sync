@@ -29,7 +29,6 @@ import org.mule.api.lifecycle.InitialisationException;
 import org.mule.processor.chain.InterceptingChainLifecycleWrapper;
 import org.mule.processor.chain.SubflowInterceptingChainLifecycleWrapper;
 import org.mule.templates.AbstractTemplatesTestCase;
-import org.mule.templates.builders.SfdcObjectBuilder;
 
 import com.mulesoft.module.batch.BatchTestHelper;
 import com.sforce.soap.partner.SaveResult;
@@ -63,11 +62,11 @@ public class BusinessLogicTestDoNotCreateAccountIT extends AbstractTemplatesTest
 		System.setProperty("page.size", "1000");
 
 		// Set polling frequency to 10 seconds
-		System.setProperty("polling.frequency", "10000");
+		System.setProperty("poll.frequencyMillis", "10000");
 
 		// Set default water-mark expression to current time
 		System.clearProperty("watermark.default.expression");
-		DateTime now = new DateTime(DateTimeZone.UTC);
+		DateTime now = new DateTime(DateTimeZone.UTC).minusMinutes(1);
 		DateTimeFormatter dateFormat = DateTimeFormat
 				.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 		System.setProperty("watermark.default.expression",
@@ -86,8 +85,8 @@ public class BusinessLogicTestDoNotCreateAccountIT extends AbstractTemplatesTest
 	}
 
 	@AfterClass
-	public static void shutDown() {
-		System.clearProperty("polling.frequency");
+	public static void shutDown() throws MuleException, Exception {
+		System.clearProperty("poll.frequencyMillis");
 		System.clearProperty("watermark.default.expression");
 		System.clearProperty("account.sync.policy");
 		System.clearProperty("trigger.policy");
@@ -129,77 +128,86 @@ public class BusinessLogicTestDoNotCreateAccountIT extends AbstractTemplatesTest
 		queryOpportunityFromBFlow.initialise();
 	}
 
-	private static void cleanUpSandboxesByRemovingTestOpportunities()
-			throws MuleException, Exception {
+	private static void cleanUpSandboxesByRemovingTestOpportunities() throws MuleException, Exception {
 		final List<String> idList = new ArrayList<String>();
 		for (String opportunity : opportunitiesCreatedInA) {
 			idList.add(opportunity);
 		}
-		deleteOpportunityFromAFlow.process(getTestEvent(idList,
-				MessageExchangePattern.REQUEST_RESPONSE));
+		deleteOpportunityFromAFlow.process(getTestEvent(idList,	MessageExchangePattern.REQUEST_RESPONSE));
+		
 		idList.clear();
+		
 		for (String opportunity : opportunitiesCreatedInB) {
 			idList.add(opportunity);
 		}
-		deleteOpportunityFromBFlow.process(getTestEvent(idList,
-				MessageExchangePattern.REQUEST_RESPONSE));
+		deleteOpportunityFromBFlow.process(getTestEvent(idList,	MessageExchangePattern.REQUEST_RESPONSE));
 	}
 
 	@Test
-	public void whenUpdatingAnOpportunityInInstanceBTheBelongingOpportunityGetsUpdatedInInstanceA()
+	public void testFromBtoAWithoutAccount()
 			throws MuleException, Exception {
-		// Build test opportunities
-		SfdcObjectBuilder opportunity = anOpportunity()
+		// Build test opportunity
+		Map<String, Object> opportunity = anOpportunity()
 				.with("Amount", "123456")
-				.with("Name",
-						ANYPOINT_TEMPLATE_NAME + "-"
-								+ System.currentTimeMillis()
-								+ "Test-Opportunity")
-				.with("CloseDate", new Date());
+				.with("Name", ANYPOINT_TEMPLATE_NAME + "-" + System.currentTimeMillis()	+ "Test-Opportunity")
+				.with("CloseDate", new Date())
+				.with("StageName", "Stage One")
+				.build();
 
-		SfdcObjectBuilder justCreatedOpportunity = opportunity.with("StageName", "Stage One");
-		SfdcObjectBuilder updatedOpportunity = opportunity.with("StageName", "Stage Two");
-
-		// Create opportunities in sand-boxes and keep track of them for posterior
-		// cleaning up
-		opportunitiesCreatedInA.add(createTestOpportunitiesInSfdcSandbox(
-				justCreatedOpportunity.build(), createOpportunityInAFlow));
-		opportunitiesCreatedInB.add(createTestOpportunitiesInSfdcSandbox(
-				updatedOpportunity.build(), createOpportunityInBFlow));
+		// Create opportunities in sand-boxes and keep track of them for cleaning up afterwards
+		opportunitiesCreatedInB.add(createTestOpportunitiesInSfdcSandbox(opportunity, createOpportunityInBFlow));
 
 		// Execution
 		executeWaitAndAssertBatchJob(B_INBOUND_FLOW_NAME);
 
 		// Assertions
-		Map<String, String> retrievedOpportunityFromA = (Map<String, String>) queryOpportunity(
-				opportunity.build(), queryOpportunityFromAFlow);
-		Map<String, String> retrievedOpportunityFromB = (Map<String, String>) queryOpportunity(
-				opportunity.build(), queryOpportunityFromBFlow);
+		Map<String, String> retrievedOpportunityFromA = (Map<String, String>) queryOpportunity(opportunity, queryOpportunityFromAFlow);
+		Assert.assertNotNull("There should be some opportunity in org A", retrievedOpportunityFromA);
+		
+		opportunitiesCreatedInA.add(retrievedOpportunityFromA.get("Id"));
+		Assert.assertEquals("Opportunities should be synced", opportunity.get("Name"), retrievedOpportunityFromA.get("Name"));
+	}
+	
+	@Test
+	public void testFromAtoBWithoutAccount()
+			throws MuleException, Exception {
+		// Build test opportunity
+		Map<String, Object> opportunityInA = anOpportunity()
+				.with("Amount", "123456")
+				.with("Name", ANYPOINT_TEMPLATE_NAME + "-" + System.currentTimeMillis()	+ "Test-Opportunity")
+				.with("CloseDate", new Date())
+				.with("StageName", "Stage Two")
+				.build();
 
+		// Create opportunities in sand-boxes and keep track of them for cleaning up afterwards
+		opportunitiesCreatedInA.add(createTestOpportunitiesInSfdcSandbox(opportunityInA, createOpportunityInAFlow));
+
+		// Execution
+		executeWaitAndAssertBatchJob(A_INBOUND_FLOW_NAME);
+
+		// Assertions
+		Map<String, String> retrievedOpportunityFromB = (Map<String, String>) queryOpportunity(opportunityInA, queryOpportunityFromBFlow);
 		Assert.assertNotNull("There should be some opportunity in org B", retrievedOpportunityFromB);
-		Assert.assertEquals("Opportunities should be synced",retrievedOpportunityFromA.get("Name"), retrievedOpportunityFromB.get("Name"));
+
+		opportunitiesCreatedInB.add(retrievedOpportunityFromB.get("Id"));
+		Assert.assertEquals("Opportunities should be synced", opportunityInA.get("Name"), retrievedOpportunityFromB.get("Name"));
 	}
 
 	private Object queryOpportunity(Map<String, Object> opportunity,
 			InterceptingChainLifecycleWrapper queryOpportunityFlow)
 			throws MuleException, Exception {
 		return queryOpportunityFlow
-				.process(
-						getTestEvent(opportunity,
-								MessageExchangePattern.REQUEST_RESPONSE))
+				.process(getTestEvent(opportunity, MessageExchangePattern.REQUEST_RESPONSE))
 				.getMessage().getPayload();
 	}
 
-	private String createTestOpportunitiesInSfdcSandbox(Map<String, Object> opportunity,
-			InterceptingChainLifecycleWrapper createOpportunityFlow)
+	private String createTestOpportunitiesInSfdcSandbox(Map<String, Object> opportunity, InterceptingChainLifecycleWrapper createOpportunityFlow)
 			throws MuleException, Exception {
 		List<Map<String, Object>> salesforceOpportunities = new ArrayList<Map<String, Object>>();
 		salesforceOpportunities.add(opportunity);
 
 		final List<SaveResult> payloadAfterExecution = (List<SaveResult>) createOpportunityFlow
-				.process(
-						getTestEvent(salesforceOpportunities,
-								MessageExchangePattern.REQUEST_RESPONSE))
+				.process(getTestEvent(salesforceOpportunities, MessageExchangePattern.REQUEST_RESPONSE))
 				.getMessage().getPayload();
 		return payloadAfterExecution.get(0).getId();
 	}

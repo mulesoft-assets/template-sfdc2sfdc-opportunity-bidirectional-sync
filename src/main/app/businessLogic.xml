@@ -1,168 +1,181 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:objectstore="http://www.mulesoft.org/schema/mule/objectstore"
-	xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core"
+<mule version="EE-3.7.1"
+	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" 
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch" 
+	xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" 
+	xmlns="http://www.mulesoft.org/schema/mule/core"
 	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc"
 	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
 http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
 http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
-http://www.mulesoft.org/schema/mule/objectstore http://www.mulesoft.org/schema/mule/objectstore/current/mule-objectstore.xsd
 http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
-http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd" version="EE-3.6.1">
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd" >
     
-    <batch:job name="syncBatchA" >
+    <batch:job name="syncOpportunityA2B" >
         <batch:threading-profile poolExhaustedAction="WAIT"/>
         <batch:process-records>
             
             <batch:step name="getOpportunityInBStep" >
-                <enricher source="#[payload]" target="#[recordVars['opportunityInTargetInstance']]" doc:name="store opportunity">
-	            	<sfdc:query-single config-ref="SalesforceB" query="SELECT Id, Name, LastModifiedDate FROM Opportunity WHERE (Name = '#[payload['Name']]')" doc:name="query opportunity from B"/>
+
+                <enricher   doc:name="enrich payload fields">
+                    <sfdc:query-single config-ref="SalesforceB" query="SELECT Id, Account.Id, Name, LastModifiedDate FROM Opportunity WHERE (Name = '#[payload.Name]')" doc:name="query opportunity from B"/>
+                    <enrich source="#[payload == null ? null : payload.Id]" target="payload.Id"/>
+                    <enrich source="#[payload == null ? null : payload.LastModifiedDate]" target="payload.LastModifiedDateB"/>
+
                 </enricher>
             </batch:step>
             
-            <batch:step name="findOrCreateAccountInBStep" accept-expression="'syncAccount' == '${account.sync.policy}'">
-                <enricher source="#[payload]" target="#[recordVars['accountInTargetInstance']]" doc:name="store account in target instance">
-                    <sfdc:query-single config-ref="SalesforceB" query="SELECT Id, Name FROM Account WHERE Name = '#[payload['Account']['Name']]'" doc:name="query account in B instance"/>
+            <batch:step name="findOrCreateAccountInBStep" accept-expression="('syncAccount' == '${account.sync.policy}') &amp;&amp; (payload.Account != null)">
+                <enricher source="#[payload]" target="#[recordVars.accountInB]" doc:name="store in recordVars.accountInB">
+                    <sfdc:query-single config-ref="SalesforceB" query="SELECT Id, Name FROM Account WHERE Name = '#[payload.Account.Name]'" doc:name="query account in B instance"/>
                 </enricher>
-                <choice doc:name="Choice">
-                    <when expression="#[recordVars['accountInTargetInstance'] is NullPayload]">
-                        <enricher doc:name="store id of account in target instance" target="#[recordVars['idOfAccountInTargetInstance']]" source="#[payload]">
-	                        <processor-chain doc:name="Processor Chain">
-                                <expression-component doc:name="prepare account for creation"><![CDATA[payload['Account'].remove('Id');
-payload['Account'].put('NumberOfEmployees', payload['Account']['NumberOfEmployees'] == null ? 0 :  Integer.parseInt(payload['Account']['NumberOfEmployees']));]]></expression-component>
-                                <set-payload value="#[ [payload['Account']]]" doc:name="set payload with account to be created"/>
-       		                     <sfdc:create config-ref="SalesforceB" type="Account" doc:name="create account in B instance">
-       	    	                     <sfdc:objects ref="#[payload]"/>
-       	        	             </sfdc:create>
-                                <expression-transformer expression="#[payload[0].getId()]" doc:name="get the id of the account created"/>
-	                        </processor-chain>
+                <choice doc:name="does account in B need to be created?">
+                    <when expression="#[recordVars.accountInB == null]">
+                        <enricher source="#[payload[0].getId()]" target="#[payload.AccountId]" doc:name="update payload with new account ID">
+                            <processor-chain doc:name="Processor Chain">
+                                <dw:transform-message doc:name="Extract account A from payload">
+                                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+[{	
+	Name				: payload.Account.Name,
+	AccountNumber		: payload.Account.AccountNumber,
+	Description			: payload.Account.Description,
+	Industry			: payload.Account.Industry,
+	NumberOfEmployees	: payload.Account.NumberOfEmployees,
+	ParentId			: payload.Account.ParentId
+}]]]></dw:set-payload>
+                                </dw:transform-message>
+                                <sfdc:create config-ref="SalesforceB" type="Account" doc:name="create account in B instance">
+                                    <sfdc:objects ref="#[payload]"/>
+                                </sfdc:create>
+                            </processor-chain>
                         </enricher>
                     </when>
                     <otherwise>
-                        <enricher target="#[recordVars['idOfAccountInTargetInstance']]" doc:name="store id of account in B" source="#[payload]">
-     	                   <expression-transformer expression="#[recordVars['accountInTargetInstance']['Id']]" doc:name="get the id of the account in target"/>
+                        <enricher source="#[payload]" target="#[payload.AccountId]" doc:name="update payload with existing account ID">
+                            <expression-transformer expression="#[recordVars.accountInB.Id]" doc:name="get existing account ID in B"/>
                         </enricher>
                     </otherwise>
                 </choice>
-                <expression-component doc:name="set contact's parent account id"><![CDATA[payload.put('AccountId', recordVars['idOfAccountInTargetInstance']);]]></expression-component>
+
+
             </batch:step>
-            
-            <batch:step name="upsertOpportunityInBStep" accept-expression="(recordVars['opportunityInTargetInstance'] is NullPayload || recordVars['opportunityInTargetInstance'].get('LastModifiedDate') &lt; payload.get('LastModifiedDate') &amp;&amp; '${sfdc.b.integration.user.id}' != payload.get('LastModifiedById'))">
-				<expression-component doc:name="prepare opportunity for upsert"><![CDATA[payload.remove('LastModifiedById');
-payload.remove('LastModifiedDate');
-payload.remove('Account');
+            <batch:step name="upsertOpportunityInBStep" accept-expression="(payload.LastModifiedDateB == null) || (payload.LastModifiedDateB &lt; payload.LastModifiedDate)">
 
-if(!(recordVars['opportunityInTargetInstance'] is NullPayload)) {
-	payload.put('Id',recordVars['opportunityInTargetInstance'].get('Id'));
-}
-
-if (payload.get('Amount') == null) {
-	payload.remove('Amount') 
-} else {
-	if(payload.get('Amount') instanceof  String) {
-		double doubleAmount = Double.parseDouble(payload.get('Amount'));
-		payload.put('Amount', doubleAmount);
-	}
-}
-
-if (payload.get('CloseDate') == null) {
-	payload.remove('CloseDate') 
-} else {
-    if(payload.get('CloseDate') instanceof String) {
-		java.util.Date dateCloseDate = new java.text.SimpleDateFormat("yyyy-MM-dd").parse(payload.get('CloseDate'));
-		payload.put('CloseDate', dateCloseDate);
-	}
-}]]></expression-component>
                 <batch:commit size="200" doc:name="Batch Commit">
-			        <sfdc:upsert config-ref="SalesforceB" externalIdFieldName="Id" type="Opportunity" doc:name="upsert opportunity in B">
-			            <sfdc:objects ref="#[payload]"/>
-			        </sfdc:upsert>
-			        <logger message="Upsert Salesforce response: #[payload]" level="INFO" doc:name="log response"/>
+                    <dw:transform-message doc:name="Prepare for upsert">
+                        <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload map {	
+	(Id: 			$.Id) when $.Id != null,	
+	AccountId: 		$.AccountId,		
+	Name: 			$.Name,
+	Description: 	$.Description,
+	Amount: 		$.Amount,
+	CloseDate: 		$.CloseDate as :date,
+	Type: 			$.type,
+	StageName: 		$.StageName
+}]]></dw:set-payload>
+                    </dw:transform-message>
+                    <sfdc:upsert config-ref="SalesforceB" externalIdFieldName="Id" type="Opportunity" doc:name="upsert opportunity in B">
+                        <sfdc:objects ref="#[payload]"/>
+                    </sfdc:upsert>
+                    <logger message="Upsert Salesforce B response: #[payload]" level="INFO" doc:name="log response"/>
                 </batch:commit>
             </batch:step>
+
         </batch:process-records>
         <batch:on-complete>
             <expression-component doc:name="unlock processing"><![CDATA[#[app.registry['PollSynchronizer'].unlock()]]]></expression-component>
         </batch:on-complete>
     </batch:job>
     
-    <batch:job name="syncBatchB" >
+    <batch:job name="syncOpportunityB2A" >
         <batch:threading-profile poolExhaustedAction="WAIT"/>
         <batch:process-records>
             
             <batch:step name="getOpportunityInAStep" >
-                <enricher source="#[payload]" target="#[recordVars['opportunityInTargetInstance']]" doc:name="store opportunity">
-		            <sfdc:query-single config-ref="SalesforceA" query="SELECT Id, Name, LastModifiedDate FROM Opportunity WHERE (Name = '#[payload['Name']]')" doc:name="query opportunity from A"/>
+                <enricher doc:name="enrich payload fields">
+                    <sfdc:query-single config-ref="SalesforceA" query="SELECT Id, Name, LastModifiedDate FROM Opportunity WHERE (Name = '#[payload['Name']]')" doc:name="query opportunity from A"/>
+                    <enrich source="#[payload == null ? null : payload.Id]" target="#[payload.Id]"/>
+                    <enrich source="#[payload == null ? null : payload.LastModifiedDate]" target="#[payload.LastModifiedDateA]"/>
                 </enricher>
+
             </batch:step>
-            
-            <batch:step name="findOrCreateAccountInAStep" accept-expression="'syncAccount' == '${account.sync.policy}'">
-                <enricher source="#[payload]" target="#[recordVars['accountInTargetInstance']]" doc:name="store account in target instance">
+            <batch:step name="findOrCreateAccountInAStep" accept-expression="('syncAccount' == '${account.sync.policy}') &amp;&amp; (payload.Account != null)">
+                <enricher source="#[payload]" target="#[recordVars.accountInA]" doc:name="store in recordVars.accountInA">
                     <sfdc:query-single config-ref="SalesforceA" query="SELECT Id, Name FROM Account WHERE Name = '#[payload['Account']['Name']]'" doc:name="query account in A instance"/>
                 </enricher>
-                <choice doc:name="Choice">
-                    <when expression="#[recordVars['accountInTargetInstance'] is NullPayload]">
-                        <enricher doc:name="store id of account in target instance" target="#[recordVars['idOfAccountInTargetInstance']]" source="#[payload]">
-	                        <processor-chain doc:name="Processor Chain">
-                                <expression-component doc:name="prepare account for creation"><![CDATA[payload['Account'].remove('Id');
-payload['Account'].put('NumberOfEmployees', payload['Account']['NumberOfEmployees'] == null ? 0 :  Integer.parseInt(payload['Account']['NumberOfEmployees']));]]></expression-component>
-                                <set-payload value="#[ [payload['Account']]]" doc:name="set payload with account to be created"/>
-       		                     <sfdc:create config-ref="SalesforceA" type="Account" doc:name="create account in A instance">
-       	    	                     <sfdc:objects ref="#[payload]"/>
-       	        	             </sfdc:create>
-                                <expression-transformer expression="#[payload[0].getId()]" doc:name="get the id of the account created"/>
-	                        </processor-chain>
+                <choice doc:name="does account in A need to be created?">
+                    <when expression="#[recordVars.accountInA == null]">
+                        <enricher source="#[payload[0].getId()]" target="#[payload.AccountId]" doc:name="update payload with new account ID">
+                            <processor-chain doc:name="Processor Chain">
+                                <dw:transform-message doc:name="Extract account B from payload">
+                                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+[{	
+	Name				: payload.Account.Name,
+	AccountNumber		: payload.Account.AccountNumber,
+	Description			: payload.Account.Description,
+	Industry			: payload.Account.Industry,
+	NumberOfEmployees	: payload.Account.NumberOfEmployees,
+	ParentId			: payload.Account.ParentId
+}]]]></dw:set-payload>
+                                </dw:transform-message>
+                                <sfdc:create config-ref="SalesforceA" type="Account" doc:name="create account in A instance">
+                                    <sfdc:objects ref="#[payload]"/>
+                                </sfdc:create>
+                            </processor-chain>
                         </enricher>
                     </when>
                     <otherwise>
-                        <enricher target="#[recordVars['idOfAccountInTargetInstance']]" doc:name="store id of account in A" source="#[payload]">
-     	                   <expression-transformer expression="#[recordVars['accountInTargetInstance']['Id']]" doc:name="get the id of the account in target"/>
+                        <enricher source="#[payload]" target="#[payload.AccountId]" doc:name="update payload with existing account ID">
+                            <expression-transformer expression="#[recordVars.accountInA.Id]" doc:name="get existing account ID in A"/>
                         </enricher>
                     </otherwise>
                 </choice>
-                <expression-component doc:name="set contact's parent account id"><![CDATA[payload.put('AccountId', recordVars['idOfAccountInTargetInstance']);]]></expression-component>
             </batch:step>
-            
-            <batch:step name="upsertOpportunityInAStep" accept-expression="(recordVars['opportunityInTargetInstance'] is NullPayload || recordVars['opportunityInTargetInstance'].get('LastModifiedDate') &lt; payload.get('LastModifiedDate') &amp;&amp; '${sfdc.a.integration.user.id}' != payload.get('LastModifiedById'))">
-				<expression-component doc:name="prepare opportunity for upsert"><![CDATA[payload.remove('LastModifiedById');
-payload.remove('LastModifiedDate');
-payload.remove('Account');
 
-if(!(recordVars['opportunityInTargetInstance'] is NullPayload)) {
-	payload.put('Id',recordVars['opportunityInTargetInstance'].get('Id'));
-}
+            <batch:step name="upsertOpportunityInAStep" accept-expression="(payload.LastModifiedDateA == null) || (payload.LastModifiedDateA &lt; payload.LastModifiedDate)">
 
-if (payload.get('Amount') == null) {
-	payload.remove('Amount') 
-} else {
-	if(payload.get('Amount') instanceof  String) {
-		double doubleAmount = Double.parseDouble(payload.get('Amount'));
-		payload.put('Amount', doubleAmount);
-	}
-}
-
-if (payload.get('CloseDate') == null) {
-	payload.remove('CloseDate') 
-} else {
-    if(payload.get('CloseDate') instanceof String) {
-		java.util.Date dateCloseDate = new java.text.SimpleDateFormat("yyyy-MM-dd").parse(payload.get('CloseDate'));
-		payload.put('CloseDate', dateCloseDate);
-	}
-}]]></expression-component>
                 <batch:commit size="200" doc:name="Batch Commit">
-			        <sfdc:upsert config-ref="SalesforceA" externalIdFieldName="Id" type="Opportunity" doc:name="upsert opportunity in A">
-			            <sfdc:objects ref="#[payload]"/>
-			        </sfdc:upsert>
-			        <logger message="Upsert Salesforce response: #[payload]" level="INFO" doc:name="log response"/>
+                    <dw:transform-message doc:name="Prepare for upsert">
+                        <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload map {	
+	(Id: 			$.Id) when $.Id != null,	
+	AccountId: 		$.AccountId,		
+	Name: 			$.Name,
+	Description: 	$.Description,
+	Amount: 		$.Amount,
+	CloseDate: 		$.CloseDate as :date,
+	Type: 			$.type,
+	StageName: 		$.StageName
+}]]></dw:set-payload>
+                    </dw:transform-message>
+                    <sfdc:upsert config-ref="SalesforceA" externalIdFieldName="Id" type="Opportunity" doc:name="upsert opportunity in A">
+                        <sfdc:objects ref="#[payload]"/>
+                    </sfdc:upsert>
+                    <logger message="Upsert Salesforce A response: #[payload]" level="INFO" doc:name="log response"/>
+
                 </batch:commit>
             </batch:step>
+
             
         </batch:process-records>
         <batch:on-complete>
             <expression-component doc:name="unlock processing"><![CDATA[#[app.registry['PollSynchronizer'].unlock()]]]></expression-component>
         </batch:on-complete>
     </batch:job>
+
     
 </mule>

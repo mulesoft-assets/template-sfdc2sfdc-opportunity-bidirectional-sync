@@ -1,5 +1,5 @@
 
-# Anypoint Template: Salesforce to Salesforce Opportunity Bidirectional Sync
+# Anypoint Template: Salesforce and Salesforce Opportunity Bidirectional Sync
 
 + [License Agreement](#licenseagreement)
 + [Use Case](#usecase)
@@ -48,13 +48,13 @@ Let's say we want to keep Salesforce instance *A* synchronized with Salesforce i
 
 And so on...
  
-The question for recent changes since a certain moment in nothing but a [poll inbound][1] with a [watermark][2] defined.
+The question for recent changes since a certain moment in nothing but a [poller](https://developer.mulesoft.com/docs/display/current/Poll+Reference) with a watermark defined.
 
-As implemented, this Anypoint Template also leverage [Outbound messaging](https://www.salesforce.com/us/developer/docs/api/Content/sforce_api_om_outboundmessaging.htm)
-The integration could be also triggered by http inbound connector defined in the flow that is going to trigger the application and executing the batch job with received message from Salesforce source instance.
+As implemented, this Anypoint Template also leverages [Outbound messaging](https://www.salesforce.com/us/developer/docs/api/Content/sforce_api_om_outboundmessaging.htm)
+The integration could be also triggered by HTTP inbound connector defined in the flow that is going to trigger the application and executing the batch job with received message from Salesforce source instance.
 Outbound messaging in Salesforce allows you to specify that changes to fields within Salesforce can cause messages with field values to be sent to designated external servers.
-Outbound messaging is part of the workflow rule functionality in Salesforce. Workflow rules watch for specific kinds of field changes and trigger automatic Salesforce actions in this case sending opportunities as an outbound message to Mule Http inbound connector,
-which will then further process this message and creates Opportunity in target Salesforce org.
+Outbound messaging is part of the workflow rule functionality in Salesforce. Workflow rules watch for specific kinds of field changes and trigger automatic Salesforce actions in this case sending opportunities as an outbound message to Mule HTTP inbound connector,
+which will then further process this message and create Opportunity in target Salesforce organization.
 
 # Considerations <a name="considerations"/>
 
@@ -112,7 +112,7 @@ There are no particular considerations for this Anypoint Template regarding Sale
 
 
 # Run it! <a name="runit"/>
-Simple steps to get Salesforce to Salesforce Opportunity Bidirectional Sync running.
+Simple steps to get Salesforce and Salesforce Opportunity Bidirectional Sync running.
 
 
 ## Running on premise <a name="runonopremise"/>
@@ -164,28 +164,28 @@ Mule Studio provides you with really easy way to deploy your Template directly t
 ## Properties to be configured (With examples) <a name="propertiestobeconfigured"/>
 In order to use this Mule Anypoint Template you need to configure properties (Credentials, configurations, etc.) either in properties file or in CloudHub as Environment Variables. Detail list with examples:
 ### Application configuration
-+ polling.frequency `10000`  
++ poll.frequencyMillis `10000`  
 This are the miliseconds (also different time units can be used) that will run between two different checks for updates in Salesforce
 
-+ watermark.default.expression `2014-02-25T11:00:00.000Z`  
++ watermark.default.expression `2015-08-25T11:00:00.000Z`  
 This property is an important one, as it configures what should be the start point of the synchronization.The date format accepted in SFDC Query Language is either *YYYY-MM-DDThh:mm:ss+hh:mm* or you can use Constants. [More information about Dates in SFDC](http://www.salesforce.com/us/developer/docs/officetoolkit/Content/sforce_api_calls_soql_select_dateformats.htm)
 
 ### Trigger policy(push, poll)
 + trigger.policy `poll`
-This property define, which policy should be used for synchronization. When the push policy is selected, the http inbound connector is used for Salesforce's outbound messaging and polling mechanism is ignored.
+This property defines, which policy should be used for synchronization. When the push policy is selected, the HTTP inbound connector is used for Salesforce's outbound messaging and polling mechanism is ignored.
 
 ### SalesForce Connector configuration for company A
 + sfdc.a.username `jorge.drexler@mail.com`
 + sfdc.a.password `Noctiluca123`
 + sfdc.a.securityToken `avsfwCUl7apQs56Xq2AKi3X`
-+ sfdc.a.url `https://login.salesforce.com/services/Soap/u/28.0`
++ sfdc.a.url `https://login.salesforce.com/services/Soap/u/32.0`
 + sfdc.a.integration.user.id= `A0ed000BO9T`  
 
 ### SalesForce Connector configuration for company B
 + sfdc.b.username `mariano.cozzi@mail.com`
 + sfdc.b.password `LaRanitaDeLaBicicleta456`
 + sfdc.b.securityToken `ces56arl7apQs56XTddf34X`
-+ sfdc.b.url `https://login.salesforce.com/services/Soap/u/28.0`
++ sfdc.b.url `https://login.salesforce.com/services/Soap/u/32.0`
 + sfdc.b.integration.user.id= `A0ed000BO9T`
 
 # API Calls <a name="apicalls"/>
@@ -199,7 +199,7 @@ The division by ***200*** is because, by default, Opportunities are gathered in 
 
 For instance if 10 records are fetched from origin instance, then 12 api calls will be made (1 + 10 + 1).
 
-When the outbound messaging is enabled in Salesforce and template trigger policy is push, specify as url get parameter saleforce's source organization eg. http://yourapp.cloudhub.io:80/?source=A
+When the outbound messaging is enabled in Salesforce and template trigger policy is push, specify Saleforce source organization eg. http://yourapp.cloudhub.io:80/?source=A as URL query parameter
 Also consider that all required fields of Opportunity in Salesforce should be added for the outbound messaging.
 
 

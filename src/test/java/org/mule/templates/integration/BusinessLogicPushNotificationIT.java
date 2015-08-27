@@ -6,8 +6,7 @@
 
 package org.mule.templates.integration;
 
-import static junit.framework.Assert.assertEquals;
-
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -15,11 +14,11 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mule.DefaultMuleMessage;
 import org.mule.MessageExchangePattern;
 import org.mule.api.MuleEvent;
 import org.mule.api.MuleException;
@@ -30,6 +29,7 @@ import org.mule.processor.chain.InterceptingChainLifecycleWrapper;
 import org.mule.processor.chain.SubflowInterceptingChainLifecycleWrapper;
 import org.mule.tck.junit4.rule.DynamicPort;
 import org.mule.templates.AbstractTemplatesTestCase;
+import org.mule.transformer.types.DataTypeFactory;
 
 import com.mulesoft.module.batch.BatchTestHelper;
 
@@ -46,8 +46,7 @@ public class BusinessLogicPushNotificationIT extends AbstractTemplatesTestCase {
 	private static final String B_INBOUND_FLOW_NAME = "triggerSyncFromBFlow";
 	private static final String ANYPOINT_TEMPLATE_NAME = "sfdc2sfdc-bidirectional-opportunity-sync";
 	private static final int TIMEOUT_MILLIS = 60;
-	private static final String ACCOUNT_ID_IN_B = "0012000001AHHlv";
-	private static final String SOURCE_SYSTEM = "A";
+	private static final Map<String,String> HTTP_QUERY_PARAMS_MAP = new HashMap<String,String>(){{ put("source", "A"); }};
 	private BatchTestHelper helper;
 	private Flow triggerPushFlow;
 	private InterceptingChainLifecycleWrapper queryOpportunityFromBFlow;
@@ -60,15 +59,13 @@ public class BusinessLogicPushNotificationIT extends AbstractTemplatesTestCase {
 	@BeforeClass
 	public static void beforeClass() {
 		System.setProperty("trigger.policy", "push");
-		System.setProperty("account.sync.policy", "assignDummyAccount");
-		System.setProperty("account.id.in.b", ACCOUNT_ID_IN_B);
+		System.setProperty("account.sync.policy", "syncAccount");
 	}
 
 	@AfterClass
 	public static void shutDown() {
 		System.clearProperty("trigger.policy");
 		System.clearProperty("account.sync.policy");
-		System.clearProperty("account.id.in.b");
 	}
 
 	@Before
@@ -113,11 +110,12 @@ public class BusinessLogicPushNotificationIT extends AbstractTemplatesTestCase {
 	 */
 	@Test
 	public void testMainFlow() throws Exception {
-		// Execution
-		String name = buildUniqueName();
-		MuleMessage message = new DefaultMuleMessage(buildRequest(name), muleContext);
-		message.setProperty("source", SOURCE_SYSTEM, PropertyScope.INBOUND);
-		MuleEvent testEvent = getTestEvent(message, MessageExchangePattern.REQUEST_RESPONSE);
+		// Execution		
+		String name = buildUniqueName();		
+		final MuleEvent testEvent = getTestEvent(null, MessageExchangePattern.REQUEST_RESPONSE);
+		MuleMessage message = testEvent.getMessage();
+		message.setPayload(buildRequest(name), DataTypeFactory.create(InputStream.class, "application/xml"));
+		message.setProperty("http.query.params", HTTP_QUERY_PARAMS_MAP, PropertyScope.INBOUND);
 		
 		triggerPushFlow.process(testEvent);
 		
@@ -138,7 +136,7 @@ public class BusinessLogicPushNotificationIT extends AbstractTemplatesTestCase {
 		createdOpportunities.add(createdOpportunity);
 
 		// Assertions
-		assertEquals("The user should have been sync and new name must match", name, payload.get("Name"));
+		Assert.assertEquals("The user should have been sync and new name must match", name, payload.get("Name"));
 	}
 
 	/**
@@ -155,20 +153,19 @@ public class BusinessLogicPushNotificationIT extends AbstractTemplatesTestCase {
 		request.append("   <OrganizationId>00Dd0000000dtDqEAI</OrganizationId>");
 		request.append("   <ActionId>04kd0000000PCgvAAG</ActionId>");
 		request.append("   <SessionId xsi:nil=\"true\"/>");
-		request.append("   <EnterpriseUrl>https://na14.salesforce.com/services/Soap/c/30.0/00Dd0000000dtDq</EnterpriseUrl>");
-		request.append("   <PartnerUrl>https://na14.salesforce.com/services/Soap/u/30.0/00Dd0000000dtDq</PartnerUrl>");
+		request.append("   <EnterpriseUrl>https://na14.salesforce.com/services/Soap/c/32.0/00Dd0000000dtDq</EnterpriseUrl>");
+		request.append("   <PartnerUrl>https://na14.salesforce.com/services/Soap/u/32.0/00Dd0000000dtDq</PartnerUrl>");
 		request.append("   <Notification>");
-		request.append("     <Id>04l2000000KFmjJAAT</Id>");
+		request.append("     <Id>null</Id>");
 		request.append("     <sObject xsi:type=\"sf:Opportunity\" xmlns:sf=\"urn:sobject.enterprise.soap.sforce.com\">");
-		request.append("       <sf:Id>0062000000ZZpewAAD</sf:Id>");
-		request.append("       <sf:AccountId>0012000001AOHpxAAH</sf:AccountId>");
-		request.append("       <sf:Amount>12.0</sf:Amount>");
+		request.append("       <sf:Id>006w000000f7O5ZAAU</sf:Id>");
+		request.append("       <sf:Amount>150000</sf:Amount>");
 		request.append("       <sf:CloseDate>2011-08-04</sf:CloseDate>");
 		request.append("       <sf:Description>description</sf:Description>");
-		request.append("       <sf:LastModifiedDate>2014-08-20T11:16:04.000Z</sf:LastModifiedDate>");
+		request.append("       <sf:LastModifiedDate>2015-08-25T10:52:04.000Z</sf:LastModifiedDate>");
 		request.append("       <sf:Name>" + name + "</sf:Name>");
 		request.append("       <sf:Probability>50.0</sf:Probability>");
-		request.append("       <sf:StageName>Value Proposition</sf:StageName>");
+		request.append("       <sf:StageName>Closed Won</sf:StageName>");
 		request.append("       <sf:Type>Existing Customer - Replacement</sf:Type>");
 		request.append("     </sObject>");
 		request.append("   </Notification>");

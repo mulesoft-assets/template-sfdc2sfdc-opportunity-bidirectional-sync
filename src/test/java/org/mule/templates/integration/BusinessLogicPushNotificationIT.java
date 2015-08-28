@@ -62,6 +62,7 @@ public class BusinessLogicPushNotificationIT extends AbstractTemplatesTestCase {
 	
 	@BeforeClass
 	public static void beforeClass() {
+		System.setProperty("poll.frequencyMillis", "10000");
 		System.setProperty("trigger.policy", "push");
 		System.setProperty("account.sync.policy", "syncAccount");
 		// Set default water-mark expression to current time
@@ -75,6 +76,7 @@ public class BusinessLogicPushNotificationIT extends AbstractTemplatesTestCase {
 		System.clearProperty("trigger.policy");
 		System.clearProperty("account.sync.policy");
 		System.clearProperty("watermark.default.expression");
+		System.clearProperty("poll.frequencyMillis");
 	}
 
 	@Before

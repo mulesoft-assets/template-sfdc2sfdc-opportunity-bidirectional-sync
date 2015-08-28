@@ -164,6 +164,7 @@ Mule Studio provides you with really easy way to deploy your Template directly t
 ## Properties to be configured (With examples) <a name="propertiestobeconfigured"/>
 In order to use this Mule Anypoint Template you need to configure properties (Credentials, configurations, etc.) either in properties file or in CloudHub as Environment Variables. Detail list with examples:
 ### Application configuration
++ http.port `9090`
 + poll.frequencyMillis `10000`  
 This are the miliseconds (also different time units can be used) that will run between two different checks for updates in Salesforce
 
@@ -174,19 +175,24 @@ This property is an important one, as it configures what should be the start poi
 + trigger.policy `poll`
 This property defines, which policy should be used for synchronization. When the push policy is selected, the HTTP inbound connector is used for Salesforce's outbound messaging and polling mechanism is ignored.
 
+### Account sync policy(empty value, syncAccount)
++ account.sync.policy ``
+If the account.sync.policy property has no value assigned, the contact will be just moved over without a parent account.
+If the syncAccount policy is syncAccount then the Opportunity will be created with an account with the same name as in the source instance. 
+
 ### SalesForce Connector configuration for company A
 + sfdc.a.username `jorge.drexler@mail.com`
 + sfdc.a.password `Noctiluca123`
 + sfdc.a.securityToken `avsfwCUl7apQs56Xq2AKi3X`
 + sfdc.a.url `https://login.salesforce.com/services/Soap/u/32.0`
-+ sfdc.a.integration.user.id= `A0ed000BO9T`  
++ sfdc.a.integration.user.id `A0ed000BO9T`  
 
 ### SalesForce Connector configuration for company B
 + sfdc.b.username `mariano.cozzi@mail.com`
 + sfdc.b.password `LaRanitaDeLaBicicleta456`
 + sfdc.b.securityToken `ces56arl7apQs56XTddf34X`
 + sfdc.b.url `https://login.salesforce.com/services/Soap/u/32.0`
-+ sfdc.b.integration.user.id= `A0ed000BO9T`
++ sfdc.b.integration.user.id `A0ed000BO9T`
 
 # API Calls <a name="apicalls"/>
 Salesforce imposes limits on the number of API Calls that can be made. Therefore calculating this amount may be an important factor to consider. The Anypoint Template calls to the API can be calculated using the formula:

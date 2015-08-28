@@ -12,6 +12,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -60,12 +64,17 @@ public class BusinessLogicPushNotificationIT extends AbstractTemplatesTestCase {
 	public static void beforeClass() {
 		System.setProperty("trigger.policy", "push");
 		System.setProperty("account.sync.policy", "syncAccount");
+		// Set default water-mark expression to current time
+		DateTime now = new DateTime(DateTimeZone.UTC).minusMinutes(1);
+		DateTimeFormatter dateFormat = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+		System.setProperty("watermark.default.expression", now.toString(dateFormat));
 	}
 
 	@AfterClass
 	public static void shutDown() {
 		System.clearProperty("trigger.policy");
 		System.clearProperty("account.sync.policy");
+		System.clearProperty("watermark.default.expression");
 	}
 
 	@Before

@@ -79,7 +79,7 @@ payload map {
 	Name: 			$.Name,
 	Description: 	$.Description,
 	Amount: 		$.Amount as :number {class: "java.lang.Double"} default 0,
-	CloseDate: 		$.CloseDate as :date when $.CloseDate != null otherwise null,
+	CloseDate: 		$.CloseDate as :date {class: "java.util.Date"} default null,
 	Type: 			$.type,
 	StageName: 		$.StageName
 }]]></dw:set-payload>
@@ -157,7 +157,7 @@ payload map {
 	Name: 			$.Name,
 	Description: 	$.Description,
 	Amount: 		$.Amount as :number {class: "java.lang.Double"} default 0,
-	CloseDate: 		$.CloseDate as :date when $.CloseDate != null otherwise null,
+	CloseDate: 		$.CloseDate as :date {class: "java.util.Date"} default null,
 	Type: 			$.type,
 	StageName: 		$.StageName
 }]]></dw:set-payload>

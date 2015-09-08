@@ -47,7 +47,7 @@ http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee
 	AccountNumber		: payload.Account.AccountNumber,
 	Description			: payload.Account.Description,
 	Industry			: payload.Account.Industry,
-	NumberOfEmployees	: payload.Account.NumberOfEmployees,
+	NumberOfEmployees	: payload.Account.NumberOfEmployees as :number {class: "java.lang.Integer"} default 0,
 	ParentId			: payload.Account.ParentId
 }]]]></dw:set-payload>
                                 </dw:transform-message>
@@ -78,7 +78,7 @@ payload map {
 	AccountId: 		$.AccountId,		
 	Name: 			$.Name,
 	Description: 	$.Description,
-	Amount: 		$.Amount,
+	Amount: 		$.Amount as :number {class: "java.lang.Double"} default 0,
 	CloseDate: 		$.CloseDate as :date,
 	Type: 			$.type,
 	StageName: 		$.StageName
@@ -126,7 +126,7 @@ payload map {
 	AccountNumber		: payload.Account.AccountNumber,
 	Description			: payload.Account.Description,
 	Industry			: payload.Account.Industry,
-	NumberOfEmployees	: payload.Account.NumberOfEmployees,
+	NumberOfEmployees	: payload.Account.NumberOfEmployees as :number {class: "java.lang.Integer"} default 0,
 	ParentId			: payload.Account.ParentId
 }]]]></dw:set-payload>
                                 </dw:transform-message>
@@ -156,7 +156,7 @@ payload map {
 	AccountId: 		$.AccountId,		
 	Name: 			$.Name,
 	Description: 	$.Description,
-	Amount: 		$.Amount,
+	Amount: 		$.Amount as :number {class: "java.lang.Double"} default 0,
 	CloseDate: 		$.CloseDate as :date,
 	Type: 			$.type,
 	StageName: 		$.StageName

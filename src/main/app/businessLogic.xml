@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule version="EE-3.7.1"
-	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" 
+<mule xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" 
 	xmlns:batch="http://www.mulesoft.org/schema/mule/batch" 
 	xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" 
 	xmlns="http://www.mulesoft.org/schema/mule/core"
@@ -66,7 +65,7 @@ http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee
 
 
             </batch:step>
-            <batch:step name="upsertOpportunityInBStep" accept-expression="(payload.LastModifiedDateB == null) || (payload.LastModifiedDateB &lt; payload.LastModifiedDate)">
+            <batch:step name="upsertOpportunityInBStep" accept-expression="(payload.LastModifiedDateB == null) || ((new org.joda.time.DateTime(payload.LastModifiedDate)).isAfter(new org.joda.time.DateTime(payload.LastModifiedDateB)))">
 
                 <batch:commit size="200" doc:name="Batch Commit">
                     <dw:transform-message doc:name="Prepare for upsert">
@@ -144,7 +143,7 @@ payload map {
                 </choice>
             </batch:step>
 
-            <batch:step name="upsertOpportunityInAStep" accept-expression="(payload.LastModifiedDateA == null) || (payload.LastModifiedDateA &lt; payload.LastModifiedDate)">
+            <batch:step name="upsertOpportunityInAStep" accept-expression="(payload.LastModifiedDateA == null) || ((new org.joda.time.DateTime(payload.LastModifiedDate)).isAfter(new org.joda.time.DateTime(payload.LastModifiedDateA)))">
 
                 <batch:commit size="200" doc:name="Batch Commit">
                     <dw:transform-message doc:name="Prepare for upsert">

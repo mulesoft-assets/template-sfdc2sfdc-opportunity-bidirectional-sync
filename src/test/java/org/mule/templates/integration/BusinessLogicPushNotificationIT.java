@@ -46,7 +46,7 @@ public class BusinessLogicPushNotificationIT extends AbstractTemplatesTestCase {
 	private static final String B_INBOUND_FLOW_NAME = "triggerSyncFromBFlow";
 	private static final String ANYPOINT_TEMPLATE_NAME = "sfdc2sfdc-bidirectional-opportunity-sync";
 	private static final int TIMEOUT_MILLIS = 60;
-	private static final String ACCOUNT_ID_IN_B = "0012000001AHHlv";
+	private static final String ACCOUNT_ID_IN_B = "0012000001Ook37AAB";
 	private static final String SOURCE_SYSTEM = "A";
 	private BatchTestHelper helper;
 	private Flow triggerPushFlow;

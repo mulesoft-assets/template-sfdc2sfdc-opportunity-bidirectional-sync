@@ -32,40 +32,10 @@
 							<groupId>org.mule.modules</groupId>
 							<artifactId>mule-module-sfdc</artifactId>
 						</inclusion>
-					<inclusion>
-                            <groupId>org.mule.modules</groupId>
-                            <artifactId>mule-module-extensions-support</artifactId>
-                        </inclusion>
-                    <inclusion>
-                            <groupId>org.mule.modules</groupId>
-                            <artifactId>mule-module-extensions-spring-support</artifactId>
-                        </inclusion>
-                    </inclusions>
+					</inclusions>
 				</configuration>
-			</plugin>
-		<plugin>
-                <groupId>com.mulesoft.munit.tools</groupId>
-                <artifactId>munit-maven-plugin</artifactId>
-                <version>${munit.version}</version>
-                <executions>
-                    <execution>
-                        <id>test</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+			</plugin>		
         </plugins>
-	<testResources>
-            <testResource>
-                <directory>src/test/munit</directory>
-            </testResource>
-        <testResource>
-                <directory>src/test/resources</directory>
-            </testResource>
-        </testResources>
     </build>
 
 	<dependencies>
@@ -92,29 +62,7 @@
             <artifactId>mule-module-http</artifactId>
             <version>${mule.version}</version>
             <scope>provided</scope>
-        </dependency>
-    <dependency>
-            <groupId>com.mulesoft.munit</groupId>
-            <artifactId>mule-munit-support</artifactId>
-            <version>${mule.munit.support.version}</version>
-            <scope>test</scope>
-        </dependency>
-    <dependency>
-            <groupId>com.mulesoft.munit</groupId>
-            <artifactId>munit-runner</artifactId>
-            <version>${munit.version}</version>
-            <scope>test</scope>
-        </dependency>
-    <dependency>
-            <groupId>org.mule.modules</groupId>
-            <artifactId>mule-module-extensions-support</artifactId>
-            <version>${mule.version}</version>
-        </dependency>
-    <dependency>
-            <groupId>org.mule.modules</groupId>
-            <artifactId>mule-module-extensions-spring-support</artifactId>
-            <version>${mule.version}</version>
-        </dependency>
+        </dependency>    
     </dependencies>
 
 	<repositories>	
@@ -137,9 +85,4 @@
 			<layout>default</layout>
 		</repository>
 	</repositories>
-
-<properties>
-        <munit.version>1.0.0</munit.version>
-    <mule.munit.support.version>3.7.0</mule.munit.support.version>
-    </properties>
 </project>

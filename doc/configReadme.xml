@@ -60,20 +60,20 @@ If the account.sync.policy property has no value assigned, the contact will be j
 If the syncAccount policy is syncAccount then the Opportunity will be created with an account with the same name as in the source instance. 
 
 ### SalesForce Connector configuration for company A
-+ sfdc.a.username `jorge.drexler@mail.com`
-+ sfdc.a.password `Noctiluca123`
++ sfdc.a.username `sfdc.a.user@mail.com`
++ sfdc.a.password `passworda`
 + sfdc.a.securityToken `avsfwCUl7apQs56Xq2AKi3X`
-+ sfdc.a.url `https://login.salesforce.com/services/Soap/u/32.0`
++ sfdc.a.url `https://login.salesforce.com/services/Soap/u/39.0`
 + sfdc.a.integration.user.id `A0ed000BO9T`
 
 	**Note:** To find out the correct *sfdc.a.integration.user.id* value, please, refer to example project **Salesforce Data Retrieval** in [Anypoint Exchange](http://www.mulesoft.org/documentation/display/current/Anypoint+Exchange).
 
 ### SalesForce Connector configuration for company B
-+ sfdc.b.username `mariano.cozzi@mail.com`
-+ sfdc.b.password `LaRanitaDeLaBicicleta456`
++ sfdc.b.username `sfdc.b.user@mail.com`
++ sfdc.b.password `passwordb`
 + sfdc.b.securityToken `ces56arl7apQs56XTddf34X`
-+ sfdc.b.url `https://login.salesforce.com/services/Soap/u/32.0`
-+ sfdc.b.integration.user.id `A0ed000BO9T`
++ sfdc.b.url `https://login.salesforce.com/services/Soap/u/39.0`
++ sfdc.b.integration.user.id `B0ed000BO9T`
 
 	**Note:** To find out the correct *sfdc.b.integration.user.id* value, please, refer to example project **Salesforce Data Retrieval** in [Anypoint Exchange](http://www.mulesoft.org/documentation/display/current/Anypoint+Exchange).
 ]]>

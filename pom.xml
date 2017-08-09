@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.mule.templates</groupId>
 		<artifactId>templates-tooling-parent-pom</artifactId>
-		<version>1.2.7</version>
+		<version>1.2.14</version>
 	</parent>
 
 	<modelVersion>4.0.0</modelVersion>
@@ -82,12 +82,6 @@
 			<id>mule-ee-releases</id>
 			<name>MuleSoft Releases EE Repository</name>
 			<url>https://repository.mulesoft.org/nexus/content/repositories/releases-ee/</url>
-			<layout>default</layout>
-		</repository>
-		<repository>
-			<id>mulesoft-snapshots</id>
-			<name>MuleSoft Snapshots Repository</name>
-			<url>https://repository.mulesoft.org/nexus/content/repositories/snapshots/</url>
 			<layout>default</layout>
 		</repository>
 	</repositories>

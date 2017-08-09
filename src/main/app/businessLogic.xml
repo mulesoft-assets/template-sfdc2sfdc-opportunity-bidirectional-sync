@@ -22,10 +22,15 @@ http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee
             <batch:step name="getOpportunityInBStep" >
 
                 <enricher   doc:name="enrich payload fields">
-                    <sfdc:query-single config-ref="SalesforceB" query="SELECT Id, Account.Id, Name, LastModifiedDate FROM Opportunity WHERE (Name = '#[payload.Name]')" doc:name="query opportunity from B"/>
+                    <sfdc:query-single config-ref="SalesforceB" query="SELECT Id, Name, LastModifiedDate FROM Opportunity WHERE (Name = '#[payload.Name]')" doc:name="query opportunity from B"/>
                     <enrich source="#[payload == null ? null : payload.Id]" target="payload.Id"/>
                     <enrich source="#[payload == null ? null : payload.LastModifiedDate]" target="payload.LastModifiedDateB"/>
 
+                </enricher>
+            </batch:step>
+            <batch:step name="enrichWithAccountInAWhenPush" accept-expression="('syncAccount' == '${account.sync.policy}') &amp;&amp; ('push' == '${trigger.policy}') &amp;&amp; (payload.AccountId != null)">
+                <enricher source="#[payload]" target="#[payload.Account]" doc:name="Store in Account">
+                    <sfdc:query-single config-ref="SalesforceA" query="SELECT Id, Name,AccountNumber,Description,Industry,NumberOfEmployees,ParentId FROM Account WHERE Id = '#[payload.AccountId]'" doc:name="query account in A instance"/>
                 </enricher>
             </batch:step>
             
@@ -108,9 +113,14 @@ payload map {
                 </enricher>
 
             </batch:step>
+            <batch:step name="enrichWithAccountInBWhenPush" accept-expression="('syncAccount' == '${account.sync.policy}') &amp;&amp; ('push' == '${trigger.policy}') &amp;&amp; (payload.AccountId != null)">
+                <enricher source="#[payload]" target="#[payload.Account]" doc:name="store in Account">
+                    <sfdc:query-single config-ref="SalesforceB" query="SELECT Id, Name,AccountNumber,Description,Industry,NumberOfEmployees,ParentId FROM Account WHERE Id = '#[payload.AccountId]'" doc:name="query account in B instance"/>
+                </enricher>
+            </batch:step>
             <batch:step name="findOrCreateAccountInAStep" accept-expression="('syncAccount' == '${account.sync.policy}') &amp;&amp; (payload.Account != null)">
                 <enricher source="#[payload]" target="#[recordVars.accountInA]" doc:name="store in recordVars.accountInA">
-                    <sfdc:query-single config-ref="SalesforceA" query="SELECT Id, Name FROM Account WHERE Name = '#[payload['Account']['Name']]'" doc:name="query account in A instance"/>
+                    <sfdc:query-single config-ref="SalesforceA" query="SELECT Id, Name FROM Account WHERE Name = '#[payload.Account.Name]'" doc:name="query account in A instance"/>
                 </enricher>
                 <choice doc:name="does account in A need to be created?">
                     <when expression="#[recordVars.accountInA == null]">

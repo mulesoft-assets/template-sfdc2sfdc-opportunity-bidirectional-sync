@@ -37,15 +37,15 @@ payload.Envelope.Body.notifications.Notification.*sObject
 
 
                 <choice doc:name="Trigger target system destination">
-                    <when expression="#[flowVars.sourceSystem == 'A']">
+                    <when expression="#[(flowVars.sourceSystem == 'A') &amp;&amp; (payload[0].LastModifiedById != '${sfdc.a.integration.user.id}')]">
                         <batch:execute name="syncOpportunityA2B" doc:name="trigger batch execution for syncOpportunityA2B"/>
                     </when>
-                    <when expression="#[flowVars.sourceSystem == 'B']">
+                    <when expression="#[(flowVars.sourceSystem == 'B') &amp;&amp; (payload[0].LastModifiedById != '${sfdc.b.integration.user.id}')]">
                         <batch:execute name="syncOpportunityB2A" doc:name="trigger batch execution for syncOpportunityB2A"/>
                     </when>
                     <otherwise>
                         <expression-component doc:name="unlock processing"><![CDATA[#[app.registry['PollSynchronizer'].unlock()]]]></expression-component>
-                        <logger message="'sourceSystem' variable not found - message ignored" level="INFO" doc:name="Logger"/>
+                        <logger message="'sourceSystem' variable not found or integration user detected - message ignored" level="INFO" doc:name="Logger"/>
                     </otherwise>
                 </choice>
             </when>

@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+
+<flow name="pushFlow" doc:id="d06d2b84-ba6d-4c74-9b26-f6443b4e0245" >
+		<http:listener config-ref="HTTP_Listener_config" path="/" doc:name="Listener" doc:id="8c55bfe5-1ace-4ff7-b08f-6937c33f7077" />
+		<logger level="INFO" doc:name="Log about push notification" doc:id="33c971d9-fe8d-4219-8c3a-96eb41796dea" message="Triggered pushFlow" />
+		<choice doc:name="Trigger policy?" doc:id="ab49295a-6cfe-4ff6-b01e-ee10907e9442" >
+			<when expression="#['push' == '${trigger.policy}']" >
+				<set-variable value="#[attributes.queryParams.source]" doc:name="set sourceSystem variable" doc:id="dcdeabad-6703-4204-8d42-1c635ca7c275" variableName="sourceSystem"/>
+				<ee:transform doc:name="XML to Opportunity" doc:id="319ace93-f407-4cbc-9bb3-51d89021f6ff" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload.Envelope.Body.notifications.Notification.*sObject]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<choice doc:name="Source system?" doc:id="35afa505-5e63-42b7-9894-289aa9046038" >
+					<when expression="#[(vars.sourceSystem == 'A') and (payload[0].LastModifiedById != '${sfdc.a.integration.user.id}')]" >
+						<flow-ref name="fromSalesforceAtoSalesforceB" doc:name="fromSalesforceAtoSalesforceB" doc:id="a6d7734e-bc60-41cc-ad58-5ec889c92665" />
+					</when>
+					<when expression="#[(vars.sourceSystem == 'B') and (payload[0].LastModifiedById != '${sfdc.b.integration.user.id}')]" >
+						<flow-ref doc:name="fromSalesforceBtoSalesforceA" doc:id="894b1f2d-c776-48a1-85e4-ce62c80a06dd" name="fromSalesforceBtoSalesforceA"/>
+					</when>
+					<otherwise >
+						<logger level="INFO" doc:name="Source system not set" doc:id="78f56fc8-b31b-4ba1-9444-10b31e17947b" message="'sourceSystem' url parameter not set - message ignored"/>
+					</otherwise>
+				</choice>
+			
+</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Log about skipped message" doc:id="93bbbb8d-2cd9-4ee0-aa20-2f6caf49970c" message="Trigger policy has been set to POLL. Skipping this message"/>
+			</otherwise>
+		</choice>
+		<set-payload value="&lt;soapenv:Envelope xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/' xmlns:out='http://soap.sforce.com/2005/09/outbound'&gt;&lt;soapenv:Header/&gt;&lt;soapenv:Body&gt;&lt;out:notificationsResponse&gt;&lt;out:Ack&gt;true&lt;/out:Ack&gt;&lt;/out:notificationsResponse&gt;&lt;/soapenv:Body&gt;&lt;/soapenv:Envelope&gt;" doc:name="Set HTTP response body" doc:id="90bd47c3-d6ce-4065-8bf4-b9a061c70b24" mimeType="application/xml"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="488b507d-e26c-4c56-8759-8bb4f6645d71" type="ANY">
+				<flow-ref doc:name="errorHandlingFlow" doc:id="afdaf73c-0137-4d60-84f6-5c41234771a3" name="errorHandlingFlow"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+<flow name="schedulerFlow" doc:id="aff4106d-d2f6-4366-940a-a380dcb1cf73" >
+		<scheduler doc:name="Scheduler" doc:id="58b7c776-fbee-4753-9bea-f6cc3e037efd" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="${scheduler.frequency}" startDelay="${scheduler.startDelay}"/>
+			</scheduling-strategy>
+		</scheduler>
+		<choice doc:name="Trigger policy?" doc:id="174292b4-ef81-47ec-b656-36bd73a9a83e" >
+			<when expression="#['poll' == '${trigger.policy}']" >
+				<os:retrieve key="syncState" doc:name="Retrieve sync state" objectStore="SchedulerStatus" target="syncState">
+			<os:default-value><![CDATA[fromA]]></os:default-value>
+
+		</os:retrieve>
+				<choice doc:name="SyncState?" doc:id="b4703d83-780b-4e2d-bf5d-51b1566d66e2">
+			<when expression="#[(vars.syncState != 'running' and vars.syncState == 'fromA') or vars.syncState == null]">
+				<logger level="INFO" doc:name="running from A" doc:id="c9cd1c27-5978-4ad8-b87f-99da49944447" message="running from A" />
+				<os:store key="syncState" doc:name="Set sync state to running" doc:id="340ac5e0-764f-4164-aeaa-14e616987553" objectStore="SchedulerStatus">
+					<os:value><![CDATA[running]]></os:value>
+				</os:store>
+				<flow-ref doc:name="sfdcQueryFlowA" doc:id="b0c87553-d459-4f12-940c-0f8f19892266" name="sfdcQueryFlowA"/>
+						<flow-ref doc:name="fromSalesforceAtoSalesforceB" doc:id="43633fd4-8ec3-4899-8a82-93b88f816122" name="fromSalesforceAtoSalesforceB" />
+			
+
+</when>
+			<when expression="#[vars.syncState != 'running' and vars.syncState == 'fromB']">
+				<logger level="INFO" doc:name="running from B" doc:id="840599bf-2442-45d6-b66d-fbe11593bd60" message="running from B" />
+				<os:store key="syncState" doc:name="Set sync state to running" doc:id="5059b820-0895-4454-9e50-e686d0f07758" objectStore="SchedulerStatus">
+					<os:value><![CDATA[running]]></os:value>
+				</os:store>
+				<flow-ref doc:name="sfdcQueryFlowB" doc:id="121efa5b-33a7-4c76-aa72-3112507c4c0b" name="sfdcQueryFlowB"/>
+						<flow-ref doc:name="fromSalesforceBtoSalesforceA" doc:id="d8baf0c3-ace8-4d57-80c5-f7ea614d3946" name="fromSalesforceBtoSalesforceA" />
+			
+
+</when>
+			<otherwise>
+				<logger level="INFO" doc:name="Batch running" doc:id="bf955eec-4baf-4836-b7fd-7d77ff5ebcb1" message="Batch running" />
+			</otherwise>
+		</choice>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Log about skipped message" doc:id="bcc2411f-d387-4889-a1c6-b479ca871e8a" message="Trigger policy has been set to PUSH. Skipping this message"/>
+			</otherwise>
+		</choice>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="488b507d-e26c-4c56-8759-8bb4f6645d71" type="ANY">
+				<flow-ref doc:name="errorHandlingFlow" doc:id="afdaf73c-0137-4d60-84f6-5c41234771a3" name="errorHandlingFlow"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+		<flow name="sfdcQueryFlowA">
+		<os:retrieve key="watermark" objectStore="watermarkStoreA" target="lastQueryDateA" doc:name="Retrieve lastQueryDateA">
+        <os:default-value><![CDATA[${watermark.default.expression}]]></os:default-value>
+    </os:retrieve>
+		<salesforce:query config-ref="Salesforce_Sfdc_A_config" doc:name="Query Opportunity with filtering criteria from Salesforce Instance A">
+		<salesforce:salesforce-query>SELECT Account.Id,Account.Name,Account.AccountNumber,Account.Description,Account.Industry,Account.NumberOfEmployees,Account.ParentId,Amount,CloseDate,LastModifiedById,LastModifiedDate,Name,StageName, Description FROM Opportunity WHERE (Amount &gt; 5000 AND LastModifiedDate &gt; :lastModifiedDate) AND (LastModifiedById &lt;&gt; '${sfdc.a.integration.user.id}') ORDER BY LastModifiedDate ASC LIMIT 200</salesforce:salesforce-query>
+		<salesforce:parameters><![CDATA[#[output applicaton/java
+---
+{
+	"lastModifiedDate" : vars.lastQueryDateA
+}]]]></salesforce:parameters>
+</salesforce:query>
+		<os:store key="watermark" failOnNullValue="false" objectStore="watermarkStoreA" doc:name="Store lastQueryDateA">
+        <os:value><![CDATA[#[max(payload map $.LastModifiedDate)]]]></os:value>
+    </os:store>
+</flow>
+<flow name="sfdcQueryFlowB">
+		<os:retrieve key="watermark" objectStore="watermarkStoreB" target="lastQueryDateB" doc:name="Retrieve lastQueryDateB">
+        <os:default-value><![CDATA[${watermark.default.expression}]]></os:default-value>
+    </os:retrieve>
+    <salesforce:query config-ref="Salesforce_Sfdc_B_config" doc:name="Query Opportunity with filtering criteria from Salesforce Instance B">
+		<salesforce:salesforce-query>SELECT Account.Id,Account.Name,Account.AccountNumber,Account.Description,Account.Industry,Account.NumberOfEmployees,Account.ParentId,Amount,CloseDate,LastModifiedById,LastModifiedDate,Name,StageName, Description FROM Opportunity WHERE (Amount &gt; 5000 AND LastModifiedDate &gt; :lastModifiedDate) AND (LastModifiedById &lt;&gt; '${sfdc.a.integration.user.id}') ORDER BY LastModifiedDate ASC LIMIT 200</salesforce:salesforce-query>
+		<salesforce:parameters><![CDATA[#[output applicaton/java
+---
+{
+	"lastModifiedDate" : vars.lastQueryDateB
+}]]]></salesforce:parameters>
+    
+</salesforce:query>
+    <os:store key="watermark" failOnNullValue="false" objectStore="watermarkStoreB" doc:name="Store lastQueryDateB">
+        <os:value><![CDATA[#[max(payload map $.LastModifiedDate)]]]></os:value>
+    </os:store>
+</flow>
+</mule>

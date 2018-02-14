@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch" 
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+
+<flow name="fromSalesforceAtoSalesforceB" doc:id="8759532e-79b7-4789-990c-dc8e162bfd67" >
+		<batch:job jobName="fromSalesforceAtoSalesforceBBatch" doc:id="204892ae-0d97-4326-beae-310c8d52b7a6">
+			<batch:process-records>
+				<batch:step name="getOpportunityFromSalesforceBStep" doc:id="89713774-362a-4e92-9bdc-41e31802bf38">
+					<salesforce:query-single config-ref="Salesforce_Sfdc_B_config" doc:name="Query Opportunity in Salesforce instance B" doc:id="e828fbe5-8917-4833-a479-8df69b560884" target="IdDateInB">
+						<salesforce:salesforce-query>SELECT Id, Name, LastModifiedDate FROM Opportunity WHERE Name = ':name'</salesforce:salesforce-query>
+						<salesforce:parameters><![CDATA[#[output applicaton/java
+---
+{
+	"name" : payload.Name
+}]]]></salesforce:parameters>
+					</salesforce:query-single>
+					<ee:transform doc:name="set Id and LastModifiedDate from matching account" doc:id="c119f87d-9095-4962-b961-efe507b06a0c">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload -'Id' ++ {
+	(Id: vars.IdDateInB.Id) if vars.IdDateInB.Id != null, 
+	(LastModifiedDateB: vars.IdDateInB.LastModifiedDate) if vars.IdDateInB.LastModifiedDate != null
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</batch:step>
+				<batch:step name="enrichWithAccountInAWhenPush" doc:id="336ce0fa-d3a2-4744-924d-6912ebac49d7" acceptExpression="#[('syncAccount' == '${account.sync.policy}') and ('push' == '${trigger.policy}') and (payload.AccountId != null)]">
+					<salesforce:query-single doc:name="Query Account in Salesforce Instance A" doc:id="2c2926a8-6ba5-40d1-bd56-bee92127fcc5" config-ref="Salesforce_Sfdc_A_config" target="accountInA">
+						<salesforce:salesforce-query >SELECT Id, Name,AccountNumber,Description,Industry,NumberOfEmployees,ParentId FROM Account WHERE Id = ':AccountId'</salesforce:salesforce-query>
+						<salesforce:parameters ><![CDATA[#[output applicaton/java
+---
+{
+	"AccountId" : payload.AccountId
+}]]]></salesforce:parameters>
+					</salesforce:query-single>
+					<ee:transform doc:name="Enrich record with Account" doc:id="11248a41-9ac7-40b0-9c1d-00063ba82502" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+import mergeWith from dw::core::Objects
+---
+payload ++ {Account: vars.accountInA}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</batch:step>
+				<batch:step name="findOrCreateAccountInBStep" doc:id="acaea295-d3c0-46b5-b869-e3e59b429110" acceptExpression='#["${account.sync.policy}" == "syncAccount" and payload.Account != null]'>
+					<salesforce:query-single config-ref="Salesforce_Sfdc_B_config" doc:name="Query account in Salesforce B" doc:id="e3e41eb8-00b9-47bd-9717-e1513e6a79b1" target="accountId">
+						<salesforce:salesforce-query>SELECT Id FROM Account WHERE Name = ':name'</salesforce:salesforce-query>
+						<salesforce:parameters><![CDATA[#[output applicaton/java
+---
+{
+	"name" : payload.Account.Name
+}]]]></salesforce:parameters>
+					</salesforce:query-single>
+					<ee:transform doc:name="Save record payload" doc:id="a6285fc1-69c9-4034-8baf-6a60e6041938" >
+						<ee:message >
+						</ee:message>
+						<ee:variables >
+							<ee:set-variable variableName="recordPayload" ><![CDATA[%dw 2.0
+output application/java
+---
+payload -"AccountId" ++ {
+	(AccountId: vars.accountId.Id) if vars.accountId.Id != null,
+}]]></ee:set-variable>
+							
+						</ee:variables>
+					</ee:transform>
+					<choice doc:name="Should be a new Account created?" doc:id="61765808-c8cf-4bb8-8dcb-ab1dd601010e" >
+						<when expression="#[vars.accountId.Id == null]" >
+							<ee:transform doc:name="prepare Account for insert" doc:id="81cf7def-04bc-4039-b3d3-d87c534c6377">
+								<ee:message>
+									<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+	AccountNumber: payload.Account.AccountNumber,
+	Description : payload.Account.Description,
+	Name: payload.Account.Name,
+	NumberOfEmployees : payload.Account.NumberOfEmployees,
+	Industry: payload.Account.Industry
+}]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+							<salesforce:create-single config-ref="Salesforce_Sfdc_B_config" type="Account" doc:name="create Account in Salesforce Instance B" doc:id="c6e32c91-cecd-4831-a08f-af616eb20f0e" />
+							<ee:transform doc:name="Push Id to record payload" doc:id="592c3f5d-8216-4f91-bd9d-285d17688559" >
+								<ee:message >
+									<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+vars.recordPayload ++ { AccountId : payload.Id }]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+						</when>
+						<otherwise >
+							<logger level="INFO" doc:name="Log - Existing Account Id already set!" doc:id="8388541c-b000-4c8e-be6e-1fcb7053bbae" message="Log - Existing Account Id already set!"/>
+							<ee:transform doc:name="record payload" doc:id="1473cc46-f3e5-418f-97d4-26c6d6a3f28c" >
+								<ee:message >
+									<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+vars.recordPayload]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+						</otherwise>
+					</choice>
+				</batch:step>
+				<batch:step name="upsertOpportunitiesInSalesforceBStep" doc:id="78a74ab4-9b91-416d-985a-acda2ac377eb" acceptExpression="#[payload.Id == null  or (payload.LastModifiedDateB &lt; payload.LastModifiedDate)]">
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="1ad86a98-643e-494a-a90a-32daab0b03cc" size="${page.size}">
+						<ee:transform doc:name="map Salesforce Opportunities" doc:id="d484063f-6d81-42ce-98ef-7cec51b04672">
+							<ee:message>
+								<ee:set-payload><![CDATA[%dw 2.0 output application/java 
+--- 
+payload map (opportunity) -> 
+{ 
+	Id: opportunity.Id,
+	AccountId: opportunity.AccountId,
+	Name: opportunity.Name,
+	Description: opportunity.Description,
+	CloseDate: opportunity.CloseDate,
+	Amount: opportunity.Amount,
+	StageName: opportunity.StageName
+}]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<salesforce:upsert-bulk config-ref="Salesforce_Sfdc_B_config" type="Opportunity" externalIdFieldName="Id" doc:name="Upsert bulk - Opportunities in Salesforce instance B" doc:id="26dee78b-3cbd-41d7-a260-538058420b0e" />
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<os:store key="syncState" doc:name="Set sync state to fromB" doc:id="f08de372-2fb9-4aef-80ca-f6da2241fc75" objectStore="SchedulerStatus">
+					<os:value><![CDATA[fromB]]></os:value>
+				</os:store>
+			</batch:on-complete>
+		
+</batch:job>
+	</flow>
+	<flow name="fromSalesforceBtoSalesforceA" doc:id="8759532e-79b7-4789-990c-dc8e162bfd67" >
+		<batch:job jobName="fromSalesforceBtoSalesforceABatch" doc:id="204892ae-0d97-4326-beae-310c8d52b7a6">
+			<batch:process-records>
+				<batch:step name="getOpportunityFromSalesforceAStep" doc:id="89713774-362a-4e92-9bdc-41e31802bf38">
+					<salesforce:query-single config-ref="Salesforce_Sfdc_A_config" doc:name="Query Opportunity in Salesforce instance A" doc:id="e828fbe5-8917-4833-a479-8df69b560884" target="IdDateInA">
+						<salesforce:salesforce-query>SELECT Id, Name, LastModifiedDate FROM Opportunity WHERE Name = ':name'</salesforce:salesforce-query>
+						<salesforce:parameters><![CDATA[#[output applicaton/java
+---
+{
+	"name" : payload.Name
+}]]]></salesforce:parameters>
+					</salesforce:query-single>
+					<ee:transform doc:name="set Id and LastModifiedDate from matching account" doc:id="c119f87d-9095-4962-b961-efe507b06a0c">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload -'Id' ++ {
+	(Id: vars.IdDateInA.Id) if vars.IdDateInA.Id != null, 
+	(LastModifiedDateA: vars.IdDateInA.LastModifiedDate) if vars.IdDateInA.LastModifiedDate != null
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</batch:step>
+				<batch:step name="enrichWithAccountInBWhenPush" doc:id="336ce0fa-d3a2-4744-924d-6912ebac49d7" acceptExpression="#[('syncAccount' == '${account.sync.policy}') and ('push' == '${trigger.policy}') and (payload.AccountId != null)]">
+					<salesforce:query-single doc:name="Query Account in Salesforce Instance B" doc:id="2c2926a8-6ba5-40d1-bd56-bee92127fcc5" config-ref="Salesforce_Sfdc_B_config" target="accountInB">
+						<salesforce:salesforce-query >SELECT Id, Name,AccountNumber,Description,Industry,NumberOfEmployees,ParentId FROM Account WHERE Id = ':AccountId'</salesforce:salesforce-query>
+						<salesforce:parameters ><![CDATA[#[output applicaton/java
+---
+{
+	"AccountId" : payload.AccountId
+}]]]></salesforce:parameters>
+					</salesforce:query-single>
+					<ee:transform doc:name="Enrich record with Account" doc:id="11248a41-9ac7-40b0-9c1d-00063ba82502" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+import mergeWith from dw::core::Objects
+---
+payload ++ {Account: vars.accountInB}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</batch:step>
+				<batch:step name="findOrCreateAccountInAStep" doc:id="acaea295-d3c0-46b5-b869-e3e59b429110" acceptExpression='#["${account.sync.policy}" == "syncAccount" and payload.Account != null]'>
+					<salesforce:query-single config-ref="Salesforce_Sfdc_A_config" doc:name="Query account in Salesforce A" doc:id="e3e41eb8-00b9-47bd-9717-e1513e6a79b1" target="accountId">
+						<salesforce:salesforce-query>SELECT Id FROM Account WHERE Name = ':name'</salesforce:salesforce-query>
+						<salesforce:parameters><![CDATA[#[output applicaton/java
+---
+{
+	"name" : payload.Account.Name
+}]]]></salesforce:parameters>
+					</salesforce:query-single>
+					<ee:transform doc:name="Save record payload" doc:id="a6285fc1-69c9-4034-8baf-6a60e6041938" >
+						<ee:message >
+						</ee:message>
+						<ee:variables >
+							<ee:set-variable variableName="recordPayload" ><![CDATA[%dw 2.0
+output application/java
+---
+payload -"AccountId" ++ {
+	(AccountId: vars.accountId.Id) if vars.accountId.Id != null,
+}]]></ee:set-variable>
+							
+						</ee:variables>
+					</ee:transform>
+					<choice doc:name="Should be a new Account created?" doc:id="61765808-c8cf-4bb8-8dcb-ab1dd601010e" >
+						<when expression="#[vars.accountId.Id == null]" >
+							<ee:transform doc:name="prepare Account for insert" doc:id="81cf7def-04bc-4039-b3d3-d87c534c6377">
+								<ee:message>
+									<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+	AccountNumber: payload.Account.AccountNumber,
+	Description : payload.Account.Description,
+	Name: payload.Account.Name,
+	NumberOfEmployees : payload.Account.NumberOfEmployees,
+	Industry: payload.Account.Industry
+}]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+							<salesforce:create-single config-ref="Salesforce_Sfdc_A_config" type="Account" doc:name="create Account in Salesforce Instance A" doc:id="c6e32c91-cecd-4831-a08f-af616eb20f0e" />
+							<ee:transform doc:name="Push Id to record payload" doc:id="592c3f5d-8216-4f91-bd9d-285d17688559" >
+								<ee:message >
+									<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+vars.recordPayload ++ { AccountId : payload.Id }]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+						</when>
+						<otherwise >
+							<logger level="INFO" doc:name="Log - Existing Account Id already set!" doc:id="8388541c-b000-4c8e-be6e-1fcb7053bbae" message="Log - Existing Account Id already set!"/>
+							<ee:transform doc:name="record payload" doc:id="1473cc46-f3e5-418f-97d4-26c6d6a3f28c" >
+								<ee:message >
+									<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+vars.recordPayload]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+						</otherwise>
+					</choice>
+				</batch:step>
+				<batch:step name="upsertOpportunitiesInSalesforceAStep" doc:id="78a74ab4-9b91-416d-985a-acda2ac377eb" acceptExpression="#[payload.Id == null  or (payload.LastModifiedDateA &lt; payload.LastModifiedDate)]">
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="1ad86a98-643e-494a-a90a-32daab0b03cc" size="${page.size}">
+						<ee:transform doc:name="map Salesforce Opportunities" doc:id="d484063f-6d81-42ce-98ef-7cec51b04672">
+							<ee:message>
+								<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload map (opportunity) -> 
+{ 
+	Id: opportunity.Id,
+	AccountId: opportunity.AccountId,
+	Name: opportunity.Name,
+	Description: opportunity.Description,
+	CloseDate: opportunity.CloseDate,
+	Amount: opportunity.Amount,
+	StageName: opportunity.StageName
+}]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<salesforce:upsert-bulk config-ref="Salesforce_Sfdc_A_config" type="Opportunity" externalIdFieldName="Id" doc:name="Upsert bulk - Opportunities in Salesforce instance A" doc:id="26dee78b-3cbd-41d7-a260-538058420b0e" />
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<os:store key="syncState" doc:name="Set sync state to fromA" doc:id="f08de372-2fb9-4aef-80ca-f6da2241fc75" objectStore="SchedulerStatus">
+					<os:value><![CDATA[fromA]]></os:value>
+				</os:store>
+			</batch:on-complete>
+		
+</batch:job>
+	</flow>
+</mule>

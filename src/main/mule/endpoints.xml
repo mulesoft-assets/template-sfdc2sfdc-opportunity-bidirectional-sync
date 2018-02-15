@@ -116,7 +116,7 @@ payload.Envelope.Body.notifications.Notification.*sObject]]></ee:set-payload>
         <os:default-value><![CDATA[${watermark.default.expression}]]></os:default-value>
     </os:retrieve>
     <salesforce:query config-ref="Salesforce_Sfdc_B_config" doc:name="Query Opportunity with filtering criteria from Salesforce Instance B">
-		<salesforce:salesforce-query>SELECT Account.Id,Account.Name,Account.AccountNumber,Account.Description,Account.Industry,Account.NumberOfEmployees,Account.ParentId,Amount,CloseDate,LastModifiedById,LastModifiedDate,Name,StageName, Description FROM Opportunity WHERE (Amount &gt; 5000 AND LastModifiedDate &gt; :lastModifiedDate) AND (LastModifiedById &lt;&gt; '${sfdc.a.integration.user.id}') ORDER BY LastModifiedDate ASC LIMIT 200</salesforce:salesforce-query>
+		<salesforce:salesforce-query>SELECT Account.Id,Account.Name,Account.AccountNumber,Account.Description,Account.Industry,Account.NumberOfEmployees,Account.ParentId,Amount,CloseDate,LastModifiedById,LastModifiedDate,Name,StageName, Description FROM Opportunity WHERE (Amount &gt; 5000 AND LastModifiedDate &gt; :lastModifiedDate) AND (LastModifiedById &lt;&gt; '${sfdc.b.integration.user.id}') ORDER BY LastModifiedDate ASC LIMIT 200</salesforce:salesforce-query>
 		<salesforce:parameters><![CDATA[#[output applicaton/java
 ---
 {

@@ -166,6 +166,7 @@ Mule Studio provides you with really easy way to deploy your Template directly t
 In order to use this Mule Anypoint Template you need to configure properties (Credentials, configurations, etc.) either in properties file or in CloudHub as Environment Variables. Detail list with examples:
 ### Application configuration
 + http.port `9090`
++ page.size `200`
 + scheduler.frequency `10000`
 + scheduler.startDelay `0`
 This are the miliseconds (also different time units can be used) that will run between two different checks for updates in Salesforce
@@ -241,7 +242,7 @@ This file holds the functional aspect of the template (points 2. to 4. described
 
 ## endpoints.xml<a name="endpointsxml"/>
 This file should contain every inbound and outbound endpoint of your integration app. It is intented to contain the application API.
-In this particular template, this file contains a couple of poll inbound endpoints that query salesforce for updates using watermark as mentioned before.
+In this particular template, this file contains a couple flows that query salesforce for updates using watermark as mentioned before.
 
 
 

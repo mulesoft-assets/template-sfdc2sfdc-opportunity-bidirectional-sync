@@ -44,6 +44,7 @@ To make this Anypoint Template run, there are certain preconditions that must be
 		<section id="application_configuration">
 		<![CDATA[
 + http.port `9090`
++ page.size `200`
 + scheduler.frequency `10000`
 + scheduler.startDelay `0`
 This are the miliseconds (also different time units can be used) that will run between two different checks for updates in Salesforce
@@ -106,7 +107,7 @@ Also consider that all required fields of Opportunity in Salesforce should be ad
 		<section id="default_endpoints_xml">
 		<![CDATA[
 This file should contain every inbound and outbound endpoint of your integration app. It is intented to contain the application API.
-In this particular template, this file contains a couple of poll inbound endpoints that query salesforce for updates using watermark as mentioned before.
+In this particular template, this file contains a couple flows that query salesforce for updates using watermark as mentioned before.
 ]]>
 		</section>
 		<section id="default_business_logic_xml">

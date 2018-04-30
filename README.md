@@ -58,7 +58,7 @@ which will then further process this message and create Opportunity in target Sa
 
 # Considerations <a name="considerations"/>
 
-To make this Anypoint Template run, there are certain preconditions that must be considered. All of them deal with the preparations in both, that must be made in order for all to run smoothly. **Failling to do so could lead to unexpected behavior of the template.**
+To make this Anypoint Template run, there are certain preconditions that must be considered. All of them deal with the preparations in both, that must be made in order for all to run smoothly. **Failing to do so could lead to unexpected behavior of the template.**
 
 
 
@@ -130,10 +130,8 @@ First thing to know if you are a newcomer to Mule is where to get the tools.
 ### Importing an Anypoint Template into Studio
 Mule Studio offers several ways to import a project into the workspace, for instance: 
 
-+ Anypoint Studio generated Deployable Archive (.zip)
-+ Anypoint Studio Project from External Location
-+ Maven-based Mule Project from pom.xml
-+ Mule ESB Configuration XML from External Location
++ Anypoint Studio Project from File System
++ Packaged mule application (.jar)
 
 You can find a detailed description on how to do so in this [Documentation Page](http://www.mulesoft.org/documentation/display/current/Importing+and+Exporting+in+Studio).
 
@@ -155,7 +153,7 @@ Complete all properties in one of the property files, for example in [mule.prod.
 ## Running on CloudHub <a name="runoncloudhub"/>
 While [creating your application on CloudHub](http://www.mulesoft.org/documentation/display/current/Hello+World+on+CloudHub) (Or you can do it later as a next step), you need to go to Deployment > Advanced to set all environment variables detailed in **Properties to be configured** as well as the **mule.env**.
 Once your app is all set and started, you will need to define Salesforce outbound messaging and a simple workflow rule. [This article will show you how to accomplish this](https://www.salesforce.com/us/developer/docs/api/Content/sforce_api_om_outboundmessaging_setting_up.htm)
-The most important setting here is the `Endpoint URL` which needs to point to your application running on Cloudbhub, eg. `http://yourapp.cloudhub.io:80/?source=value`. Value for source parameter could be `A` for source outbound messaging for organization A or `B` for organization B. Additionaly, try to add just few fields to the `Fields to Send` to keep it simple for begin.
+The most important setting here is the `Endpoint URL` which needs to point to your application running on CloudbHub, eg. `http://yourapp.cloudhub.io:80/?source=value`. Value for source parameter could be `A` for source outbound messaging for organization A or `B` for organization B. Additionally, try to add just few fields to the `Fields to Send` to keep it simple for begin.
 Once this all is done every time when you will make a change on Opportunity in source Salesforce org. This Opportunity will be sent as a SOAP message to the Http endpoint of running application in Cloudhub.
 
 ### Deploying your Anypoint Template on CloudHub <a name="deployingyouranypointtemplateoncloudhub"/>
@@ -165,25 +163,30 @@ Mule Studio provides you with really easy way to deploy your Template directly t
 ## Properties to be configured (With examples) <a name="propertiestobeconfigured"/>
 In order to use this Mule Anypoint Template you need to configure properties (Credentials, configurations, etc.) either in properties file or in CloudHub as Environment Variables. Detail list with examples:
 ### Application configuration
+**HTTP Connector configuration**
 + http.port `9090`
+
+**Batch Aggregator configuration**
 + page.size `200`
+
+**Scheduler configuration**
 + scheduler.frequency `10000`
 + scheduler.startDelay `0`
 This are the miliseconds (also different time units can be used) that will run between two different checks for updates in Salesforce
 
 + watermark.default.expression `2015-08-25T11:00:00.000Z`  
-This property is an important one, as it configures what should be the start point of the synchronization.The date format accepted in SFDC Query Language is either *YYYY-MM-DDThh:mm:ss+hh:mm* or you can use Constants. [More information about Dates in SFDC](http://www.salesforce.com/us/developer/docs/officetoolkit/Content/sforce_api_calls_soql_select_dateformats.htm)
+This property is an important one, as it configures what should be the start point of the synchronization. The date format accepted in Salesforce Query Language is either *YYYY-MM-DDThh:mm:ss+hh:mm* or you can use Constants. [More information about Dates in Salesforce](http://www.salesforce.com/us/developer/docs/officetoolkit/Content/sforce_api_calls_soql_select_dateformats.htm)
 
-### Trigger policy(push, poll)
+**Trigger policy(push, poll)**
 + trigger.policy `poll`
 This property defines, which policy should be used for synchronization. When the push policy is selected, the HTTP inbound connector is used for Salesforce's outbound messaging and polling mechanism is ignored.
 
-### Account sync policy(empty value, syncAccount)
+**Account sync policy(empty value, syncAccount)**
 + account.sync.policy ``
 If the account.sync.policy property has no value assigned, the contact will be just moved over without a parent account.
 If the syncAccount policy is syncAccount then the Opportunity will be created with an account with the same name as in the source instance. 
 
-### SalesForce Connector configuration for company A
+**SalesForce Connector configuration for company A**
 + sfdc.a.username `sfdc.a.user@mail.com`
 + sfdc.a.password `passworda`
 + sfdc.a.securityToken `avsfwCUl7apQs56Xq2AKi3X`
@@ -192,7 +195,7 @@ If the syncAccount policy is syncAccount then the Opportunity will be created wi
 
 	**Note:** To find out the correct *sfdc.a.integration.user.id* value, please, refer to example project **Salesforce Data Retrieval** in [Anypoint Exchange](http://www.mulesoft.org/documentation/display/current/Anypoint+Exchange).
 
-### SalesForce Connector configuration for company B
+**SalesForce Connector configuration for company B**
 + sfdc.b.username `sfdc.b.user@mail.com`
 + sfdc.b.password `passwordb`
 + sfdc.b.securityToken `ces56arl7apQs56XTddf34X`
@@ -204,11 +207,11 @@ If the syncAccount policy is syncAccount then the Opportunity will be created wi
 # API Calls <a name="apicalls"/>
 Salesforce imposes limits on the number of API Calls that can be made. Therefore calculating this amount may be an important factor to consider. The Anypoint Template calls to the API can be calculated using the formula:
 
-***1 + X + X / 200***
+***1 + X + X / ${page.size}***
 
 Being ***X*** the number of Opportunities to be synchronized on each run. 
 
-The division by ***200*** is because, by default, Opportunities are gathered in groups of 200 for each Upsert API Call in the commit step. Also consider that this calls are executed repeatedly every polling cycle.	
+The division by ***${page.size}*** is because, by default, Opportunities are gathered in groups of ${page.size} for each Upsert API Call in the commit step. Also consider that this calls are executed repeatedly every polling cycle.	
 
 For instance if 10 records are fetched from origin instance, then 12 api calls will be made (1 + 10 + 1).
 
@@ -241,7 +244,7 @@ This file holds the functional aspect of the template (points 2. to 4. described
 
 
 ## endpoints.xml<a name="endpointsxml"/>
-This file should contain every inbound and outbound endpoint of your integration app. It is intented to contain the application API.
+This file should contain every inbound and outbound endpoint of your integration app. It is intended to contain the application API.
 In this particular template, this file contains a couple flows that query salesforce for updates using watermark as mentioned before.
 
 

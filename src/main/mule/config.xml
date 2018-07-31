@@ -1,41 +1,22 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<mule xmlns:os="http://www.mulesoft.org/schema/mule/os"
-	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
-	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation=" 
-http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
-http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
-http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
-http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+<?xml version='1.0' encoding='utf-8'?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="  http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
 		
-		<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="910654bf-9fd9-4073-bad4-cf951b7f0022" >
-			<http:listener-connection 
-				host="0.0.0.0" 
-				port="${http.port}" />
+		<http:listener-config name="HTTP_Listener_config" doc:id="910654bf-9fd9-4073-bad4-cf951b7f0022" doc:name="HTTP Listener config">
+			<http:listener-connection host="0.0.0.0" port="${http.port}" />
 		</http:listener-config>
 		
-		<salesforce:sfdc-config name="Salesforce_Sfdc_A_config"
-			doc:name="Salesforce Sfdc config" doc:id="38a0808d-8f32-4c87-a763-4db431b3c4cd">
-			<salesforce:basic-connection 
-				username="${sfdc.a.username}"
-				password="${sfdc.a.password}" 
-				securityToken="${sfdc.a.securityToken}" 
-				url="${sfdc.a.url}"/>
+		<salesforce:sfdc-config name="Salesforce_Sfdc_A_config" doc:id="38a0808d-8f32-4c87-a763-4db431b3c4cd" doc:name="Salesforce Sfdc config">
+			<salesforce:basic-connection password="${sfdc.a.password}" securityToken="${sfdc.a.securityToken}" url="${sfdc.a.url}" username="${sfdc.a.username}" />
 		</salesforce:sfdc-config>
 		
-		<salesforce:sfdc-config name="Salesforce_Sfdc_B_config"
-			doc:name="Salesforce Sfdc config" doc:id="3d4eabb0-83f2-4e02-97e1-77c5417347f7">
-			<salesforce:basic-connection 
-				username="${sfdc.b.username}"
-				password="${sfdc.b.password}" 
-				securityToken="${sfdc.b.securityToken}" 
-				url="${sfdc.b.url}"/>
+		<salesforce:sfdc-config name="Salesforce_Sfdc_B_config" doc:id="3d4eabb0-83f2-4e02-97e1-77c5417347f7" doc:name="Salesforce Sfdc config">
+			<salesforce:basic-connection password="${sfdc.b.password}" securityToken="${sfdc.b.securityToken}" url="${sfdc.b.url}" username="${sfdc.b.username}" />
 		</salesforce:sfdc-config>		
-		<configuration-properties file="mule.${mule.env}.properties" doc:name="Configuration properties" doc:id="46877740-aac5-4812-8728-4718689aa9ec" />	
-		<configuration-properties file="common.properties" doc:name="Configuration properties" doc:id="dffa4da7-cc5c-4ecb-922e-1115b4387354" />
-		<configuration-properties doc:name="Configuration properties" doc:id="d185e6c2-8ca4-4217-928b-a845563af693" file="mule-artifact.properties" />	
-	<os:object-store name="SchedulerStatus" doc:name="Object store" doc:id="e9862648-2cb3-47db-a763-9275db0a1854" persistent="false"/>
-	<os:object-store name="watermarkStoreA" doc:name="Object store" persistent="false"/>
-	<os:object-store name="watermarkStoreB" doc:name="Object store" persistent="false"/>
+		<configuration-properties file="mule.${mule.env}.properties" doc:id="46877740-aac5-4812-8728-4718689aa9ec" doc:name="Configuration properties" />	
+		<configuration-properties file="common.properties" doc:id="dffa4da7-cc5c-4ecb-922e-1115b4387354" doc:name="Configuration properties" />
+		<configuration-properties file="mule-artifact.properties" doc:id="d185e6c2-8ca4-4217-928b-a845563af693" doc:name="Configuration properties" />	
+	<os:object-store name="SchedulerStatus" persistent="false" doc:id="e9862648-2cb3-47db-a763-9275db0a1854" doc:name="Object store" />
+	<os:object-store name="watermarkStoreA" persistent="false" doc:name="Object store" />
+	<os:object-store name="watermarkStoreB" persistent="false" doc:name="Object store" />
 	
-</mule>
+<global-property doc:name="Global Property" name="mule.env" value="dev" /></mule>

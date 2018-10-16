@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version='1.0' encoding='utf-8'?>
 <configuration>
 	<placeholders>
 		<placeholder id="template_name">Salesforce and Salesforce Opportunity Bidirectional Sync</placeholder>
@@ -7,15 +7,15 @@
 		<section id="use_case">
 As a Salesforce admin, I want to have my opportunities synchronized between two different Salesforce organizations
 
-## Template overview <a name="templateoverview"/>
+## Template overview <a name="templateoverview" />
 
 Let's say we want to keep Salesforce instance *A* synchronized with Salesforce instance *B*. Then, the integration behavior can be summarized just with the following steps:
 
 1. Ask Salesforce *A*:
-> *Which changes have there been since the last time I got in touch with you?*
+&gt; *Which changes have there been since the last time I got in touch with you?*
 
 2. For each of the updates fetched in the previous step (1.), ask Salesforce *B*:
-> *Does the update received from A should be applied?*
+&gt; *Does the update received from A should be applied?*
 
 3. If Salesforce answer for the previous question (2.) is *Yes*, then *upsert* (create or update depending each particular case) B with the belonging change
 
@@ -24,7 +24,7 @@ Let's say we want to keep Salesforce instance *A* synchronized with Salesforce i
  Repeat *ad infinitum*:
 
 5. Ask Salesforce *A*:
-> *Which changes have there been since the question I've made in the step 1.?*
+&gt; *Which changes have there been since the question I've made in the step 1.?*
 
 And so on...
  
@@ -37,19 +37,19 @@ Outbound messaging is part of the workflow rule functionality in Salesforce. Wor
 which will then further process this message and create Opportunity in target Salesforce organization.
 		</section>
 		<section id="considerations">
-<![CDATA[
-To make this Anypoint Template run, there are certain preconditions that must be considered. All of them deal with the preparations in both, that must be made in order for all to run smoothly. **Failing to do so could lead to unexpected behavior of the template.**
-]]>
+
+To make this template run, there are certain preconditions that must be considered. All of them deal with the preparations in both, that must be made for the template to run smoothly. **Failing to do so could lead to unexpected behavior of the template.**
+
 		</section>
 		<section id="application_configuration">
-		<![CDATA[
-**HTTP Connector configuration**
+		
+**HTTP Connector Configuration**
 + http.port `9090`
 
-**Batch Aggregator configuration**
+**Batch Aggregator Configuration**
 + page.size `200`
 
-**Scheduler configuration**
+**Scheduler Configuration**
 + scheduler.frequency `10000`
 + scheduler.startDelay `0`
 This are the miliseconds (also different time units can be used) that will run between two different checks for updates in Salesforce
@@ -84,18 +84,18 @@ If the syncAccount policy is syncAccount then the Opportunity will be created wi
 
 	**Note:** To find out the correct *sfdc.b.integration.user.id* value, please, refer to example project **Salesforce Data Retrieval** in [Anypoint Exchange](http://www.mulesoft.org/documentation/display/current/Anypoint+Exchange).
 
-]]>
+
 		</section>
 		<section id="running_on_cloudhub">
-		<![CDATA[
+		
 Once your app is all set and started, you will need to define Salesforce outbound messaging and a simple workflow rule. [This article will show you how to accomplish this](https://www.salesforce.com/us/developer/docs/api/Content/sforce_api_om_outboundmessaging_setting_up.htm)
 The most important setting here is the `Endpoint URL` which needs to point to your application running on CloudbHub, eg. `http://yourapp.cloudhub.io:80/?source=value`. Value for source parameter could be `A` for source outbound messaging for organization A or `B` for organization B. Additionally, try to add just few fields to the `Fields to Send` to keep it simple for begin.
 Once this all is done every time when you will make a change on Opportunity in source Salesforce org. This Opportunity will be sent as a SOAP message to the Http endpoint of running application in Cloudhub.
-]]>
+
 		</section>
 		<section id="api_calls">
-		<![CDATA[
-Salesforce imposes limits on the number of API Calls that can be made. Therefore calculating this amount may be an important factor to consider. The Anypoint Template calls to the API can be calculated using the formula:
+		
+Salesforce imposes limits on the number of API Calls that can be made. Therefore calculating this amount may be an important factor to consider. The template calls to the API can be calculated using the formula:
 
 ***1 + X + X / ${page.size}***
 
@@ -107,18 +107,18 @@ For instance if 10 records are fetched from origin instance, then 12 api calls w
 
 When the outbound messaging is enabled in Salesforce and template trigger policy is push, specify Saleforce source organization eg. http://yourapp.cloudhub.io:80/?source=A as URL query parameter
 Also consider that all required fields of Opportunity in Salesforce should be added for the outbound messaging.
-]]>
+
 		</section>
 		<section id="default_endpoints_xml">
-		<![CDATA[
+		
 This file should contain every inbound and outbound endpoint of your integration app. It is intended to contain the application API.
 In this particular template, this file contains a couple flows that query salesforce for updates using watermark as mentioned before.
-]]>
+
 		</section>
 		<section id="default_business_logic_xml">
-		<![CDATA[
+		
 This file holds the functional aspect of the template (points 2. to 4. described in the [template overview](#templateoverview)). Its main component is a [*Batch job*][8], and it includes *steps* for both executing the synchronization from Salesforce instance A to Salesforce instance B, and the other way around.
-]]>
+
 		</section>
 	</sections>
 </configuration>

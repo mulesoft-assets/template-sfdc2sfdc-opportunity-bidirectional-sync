@@ -99,7 +99,7 @@ payload.Envelope.Body.notifications.Notification.*sObject]]></ee:set-payload>
     </flow>
     <flow name="sfdcQueryFlowA">
         <os:retrieve key="watermark" objectStore="watermarkStoreA" target="lastQueryDateA" doc:name="Retrieve lastQueryDateA">
-            <os:default-value><![CDATA[#[${watermark.default.expression}]]]></os:default-value>
+            <os:default-value><![CDATA[[${watermark.default.expression}]]]></os:default-value>
         </os:retrieve>
         <salesforce:query config-ref="Salesforce_Sfdc_A_config" doc:name="Query Opportunity with filtering criteria from Salesforce Instance A">
             <salesforce:salesforce-query>SELECT
@@ -118,7 +118,7 @@ payload.Envelope.Body.notifications.Notification.*sObject]]></ee:set-payload>
     </flow>
     <flow name="sfdcQueryFlowB">
         <os:retrieve key="watermark" objectStore="watermarkStoreB" target="lastQueryDateB" doc:name="Retrieve lastQueryDateB">
-            <os:default-value><![CDATA[#[${watermark.default.expression}]]]></os:default-value>
+            <os:default-value><![CDATA[[${watermark.default.expression}]]]></os:default-value>
         </os:retrieve>
         <salesforce:query config-ref="Salesforce_Sfdc_B_config" doc:name="Query Opportunity with filtering criteria from Salesforce Instance B">
             <salesforce:salesforce-query>SELECT
